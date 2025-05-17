@@ -67,7 +67,7 @@ async def on_chat_start():
     
     # Add CSS for model comparison
     css_element = await create_css_element()
-    await css_element.send()
+    await cl.Message(content="", elements=[css_element]).send()
     
     # Welcome message
     await cl.Message(
@@ -167,7 +167,9 @@ async def on_message(message: cl.Message):
                 responses=all_responses,
                 chat_id=session_id
             )
-            await comparison.send()
+            
+            # Send comparison as element attached to a message
+            await cl.Message(content="Model Comparison:", elements=[comparison]).send()
             
             # Show individual model responses (except the primary one)
             for model_name, response_text in all_responses.items():
@@ -249,12 +251,6 @@ async def clear_conversation(action):
                 content="Failed to clear conversation. Please try again.",
                 author="System"
             ).send()
-
-@cl.on_stop
-def on_stop():
-    """Handle cleanup when the application stops."""
-    # We could persist data here if needed
-    pass
 
 if __name__ == "__main__":
     # Chainlit takes care of running the app

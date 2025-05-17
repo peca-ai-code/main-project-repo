@@ -1,0 +1,73 @@
+
+    <style>
+        .comparison-container {
+            font-family: 'Open Sans', sans-serif;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+        }
+        
+        .comparison-header {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .comparison-header h3 {
+            margin: 0;
+            padding: 0;
+            font-size: 1.2rem;
+            color: #333;
+        }
+        
+        .user-query {
+            margin: 0.5rem 0 0 0;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .model-response {
+            border: 1px solid #ddd;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .model-header {
+            padding: 0.75rem 1rem;
+            color: white;
+        }
+        
+        .model-header h4 {
+            margin: 0;
+            padding: 0;
+            font-size: 1rem;
+        }
+        
+        .response-content {
+            padding: 1rem;
+            flex: 1;
+            background-color: white;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            overflow-y: auto;
+            max-height: 500px;
+        }
+        
+        @media (max-width: 768px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    

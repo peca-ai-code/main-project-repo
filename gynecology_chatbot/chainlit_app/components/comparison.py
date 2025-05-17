@@ -9,7 +9,7 @@ async def create_comparison_element(
     user_message: str,
     responses: Dict[str, str],
     chat_id: str
-) -> cl.Element:
+):
     """
     Create a side-by-side comparison of multiple model responses.
     
@@ -19,7 +19,7 @@ async def create_comparison_element(
         chat_id: The current chat ID
         
     Returns:
-        A Chainlit Element for displaying the comparison
+        A Chainlit element for displaying the comparison
     """
     # Create HTML content for the comparison
     html_content = f"""
@@ -65,22 +65,22 @@ async def create_comparison_element(
     </div>
     """
     
-    # Create a Chainlit Element with the HTML content
-    comparison_element = cl.Element(
-        type="html",
-        content=html_content,
+    # In newer Chainlit versions, we use Text element with format="html"
+    element = cl.Text(
         name=f"comparison-{chat_id}",
-        display="inline"
+        content=html_content,
+        display="inline",
+        format="html"
     )
     
-    return comparison_element
+    return element
 
-async def create_css_element() -> cl.Element:
+async def create_css_element():
     """
     Create a CSS element for styling the comparison UI.
     
     Returns:
-        A Chainlit Element containing the CSS styles
+        A Chainlit element containing the CSS styles
     """
     css_content = """
     <style>
@@ -156,12 +156,12 @@ async def create_css_element() -> cl.Element:
     </style>
     """
     
-    # Create a Chainlit Element with the CSS content
-    css_element = cl.Element(
-        type="html",
-        content=css_content,
+    # Use Text element with format="html" for CSS
+    element = cl.Text(
         name="comparison-css",
-        display="inline"
+        content=css_content,
+        display="inline",
+        format="html"
     )
     
-    return css_element
+    return element

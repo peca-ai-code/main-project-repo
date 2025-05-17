@@ -24,8 +24,8 @@ class GeminiService:
         prompt: str,
         system_message: str,
         chat_history: Optional[List[Dict[str, Any]]] = None,
-        temperature: float = 0.7,
-        max_tokens: int = 800
+        temperature: float = 0.1,
+        max_tokens: int = 200
     ) -> str:
         """Generate a response using Google's Gemini."""
         if not self.api_key:

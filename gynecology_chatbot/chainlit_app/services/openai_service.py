@@ -5,7 +5,7 @@ OpenAI service adapter for direct API calls if needed.
 import openai
 from typing import List, Dict, Any, Optional
 import os
-from openai.error import OpenAIError
+from openai import OpenAIError
 
 class OpenAIService:
     """Service for OpenAI API interactions."""
@@ -24,8 +24,8 @@ class OpenAIService:
         prompt: str,
         system_message: str,
         chat_history: Optional[List[Dict[str, Any]]] = None,
-        temperature: float = 0.7,
-        max_tokens: int = 800
+        temperature: float = 0.1,
+        max_tokens: int = 200
     ) -> str:
         """Generate a response using OpenAI's ChatGPT."""
         if not self.api_key:
