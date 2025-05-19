@@ -85,11 +85,6 @@ class DjangoAPIClient:
             }
         return None
     
-    async def update_user_settings(self, settings: Dict[str, Any]) -> bool:
-        """Update the user's settings."""
-        response = await self._request("PATCH", "users/update_settings/", data=settings)
-        return response is not None
-    
     async def create_conversation(self, title: str) -> Optional[Dict[str, Any]]:
         """Create a new conversation."""
         data = {"title": title}
@@ -108,14 +103,10 @@ class DjangoAPIClient:
         self,
         conversation_id: int,
         message: str,
-        primary_model: str = "openai",
-        show_all_models: bool = True
     ) -> Optional[Dict[str, Any]]:
-        """Send a message to the conversation and get AI responses."""
+        """Send a message to the conversation and get AI response."""
         data = {
-            "message": message,
-            "primary_model": primary_model,
-            "show_all_models": show_all_models
+            "message": message
         }
         
         return await self._request(

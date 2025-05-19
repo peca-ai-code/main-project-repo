@@ -37,25 +37,11 @@ class Message(models.Model):
     # For assistant messages, track which model generated it
     model_name = models.CharField(max_length=50, null=True, blank=True)
     
+    # Store additional metadata as JSON
+    metadata = models.JSONField(default=dict, blank=True)
+    
     class Meta:
         ordering = ['created_at']
     
     def __str__(self):
         return f"{self.message_type}: {self.content[:50]}..."
-
-class AIModelResponse(models.Model):
-    """Model to store responses from different AI models for comparison."""
-    message = models.ForeignKey(
-        Message,
-        on_delete=models.CASCADE,
-        related_name='model_responses'
-    )
-    model_name = models.CharField(max_length=50)
-    content = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        ordering = ['created_at']
-    
-    def __str__(self):
-        return f"{self.model_name}: {self.content[:50]}..."

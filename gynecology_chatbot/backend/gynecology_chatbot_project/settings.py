@@ -30,7 +30,6 @@ INSTALLED_APPS = [
     # Local apps
     'apps.users',
     'apps.chatbot',
-    'apps.doctors',
 ]
 
 MIDDLEWARE = [
@@ -71,18 +70,6 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
-# For production, consider using PostgreSQL
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': os.environ.get('DB_NAME', 'gynecology_chatbot'),
-#         'USER': os.environ.get('DB_USER', 'postgres'),
-#         'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-#         'HOST': os.environ.get('DB_HOST', 'localhost'),
-#         'PORT': os.environ.get('DB_PORT', '5432'),
-#     }
-# }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -143,7 +130,6 @@ CORS_ALLOW_ALL_ORIGINS = True  # For development only
 # CORS_ALLOWED_ORIGINS = [
 #     "http://localhost:8000",
 #     "http://127.0.0.1:8000",
-#     "https://your-production-domain.com",
 # ]
 
 # API Keys for LLM services (better to use environment variables)
@@ -156,15 +142,12 @@ OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o')
 GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash')
 GROK_MODEL = os.environ.get('GROK_MODEL', 'grok-2')
 
-# System Prompt for Gynecology Chatbot
-GYNECOLOGY_SYSTEM_PROMPT = """
-You are a virtual gynecology assistant designed to provide support, information,
-and reassurance to users with gynecological concerns. In your responses:
+# System Prompt for Chatbot
+SYSTEM_PROMPT = """
+You are a helpful AI assistant designed to provide support, information,
+and guidance to users. In your responses:
 1. Provide clear, accurate, and concise information
-2. Emphasize when symptoms are likely benign
-3. Always recommend consulting a healthcare provider for proper diagnosis when appropriate
-4. Do not provide definitive diagnoses
-5. Be supportive, informative, and reassuring
-6. Prioritize accuracy and medical relevance over conversational aspects
-7. Use professional but accessible language
+2. Be supportive, informative, and reassuring
+3. Prioritize accuracy and relevance over conversational aspects
+4. Use professional but accessible language
 """

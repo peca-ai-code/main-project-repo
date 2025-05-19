@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Conversation, Message, AIModelResponse
+from .models import Conversation, Message
 from .serializers import (
     ConversationSerializer, ConversationListSerializer,
     MessageSerializer, ChatInputSerializer
@@ -29,14 +29,12 @@ class ConversationViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def send_message(self, request, pk=None):
-        """Send a message in a conversation and get AI responses."""
+        """Send a message in a conversation and get the best AI response."""
         conversation = self.get_object()
         serializer = ChatInputSerializer(data=request.data)
         
         if serializer.is_valid():
             user_message = serializer.validated_data['message']
-            show_all_models = serializer.validated_data.get('show_all_models', True)
-            primary_model = serializer.validated_data.get('primary_model', 'openai')
             
             # Save user message
             message = Message.objects.create(
@@ -48,28 +46,34 @@ class ConversationViewSet(viewsets.ModelViewSet):
             # Get conversation history
             history = Message.objects.filter(conversation=conversation).order_by('created_at')
             
-            # Generate AI responses
+            # Generate AI responses and evaluate the best one
             try:
-                responses = generate_ai_responses(user_message, history, primary_model)
+                response_data = generate_ai_responses(user_message, history)
                 
-                # Save primary response as assistant message
+                # Extract the best response and metadata
+                best_model = response_data["best_model"]
+                best_response = response_data["best_response"]
+                explanation = response_data["explanation"]
+                
+                # Save assistant message with the best response
                 assistant_message = Message.objects.create(
                     conversation=conversation,
-                    content=responses[primary_model],
+                    content=best_response,
                     message_type='assistant',
-                    model_name=primary_model
+                    model_name=best_model,
+                    metadata={
+                        "explanation": explanation,
+                        "evaluated": True
+                    }
                 )
                 
-                # Save all model responses for comparison
-                for model_name, response_text in responses.items():
-                    AIModelResponse.objects.create(
-                        message=assistant_message,
-                        model_name=model_name,
-                        content=response_text
-                    )
-                
-                # Return the updated conversation
-                return Response(self.get_serializer(conversation).data)
+                # Return response data
+                return Response({
+                    "message_id": assistant_message.id,
+                    "content": best_response,
+                    "model_name": best_model,
+                    "explanation": explanation
+                })
             
             except Exception as e:
                 return Response(
