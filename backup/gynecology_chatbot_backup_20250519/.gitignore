@@ -4,6 +4,7 @@ backup/
 .venv
 env/
 venv/
+
 # # General Python ignores
 # *.log
 # *.pot
