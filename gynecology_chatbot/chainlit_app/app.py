@@ -60,63 +60,6 @@ async def on_chat_start():
             author="System"
         ).send()
 
-# @cl.on_message
-# async def on_message(message: cl.Message):
-#     """Process user messages and generate responses."""
-#     # Get session data
-#     conversation_id = cl.user_session.get("conversation_id")
-    
-#     if not conversation_id:
-#         # Try to create a new conversation if none exists
-#         try:
-#             conversation = await api_client.create_conversation("New Conversation")
-#             if conversation:
-#                 conversation_id = conversation.get("id")
-#                 cl.user_session.set("conversation_id", conversation_id)
-#             else:
-#                 await cl.Message(
-#                     content="Error: Could not create conversation. Please refresh and try again.",
-#                     author="System"
-#                 ).send()
-#                 return
-#         except Exception as e:
-#             await cl.Message(
-#                 content=f"Error creating conversation: {str(e)}",
-#                 author="System"
-#             ).send()
-#             return
-    
-#     # Send thinking message
-#     thinking_msg = cl.Message(content="Thinking...", author="Assistant")
-#     await thinking_msg.send()
-    
-#     try:
-#         # Send message to API and get AI response
-#         response_data = await api_client.send_message(
-#             conversation_id=conversation_id,
-#             message=message.content
-#         )
-        
-#         if not response_data:
-#             # Handle API error
-#             thinking_msg.content = "Sorry, I encountered an error communicating with the backend. Please try again."
-#             await thinking_msg.update()
-#             return
-        
-#         # Get the best response
-#         best_response = response_data.get("content", "No response generated.")
-#         model_name = response_data.get("model_name", "AI")
-        
-#         # Update the thinking message with the selected response
-#         thinking_msg.content = best_response
-#         await thinking_msg.update()
-        
-#     except Exception as e:
-#         error_message = f"An error occurred: {str(e)}"
-#         thinking_msg.content = error_message
-#         await thinking_msg.update()
-#         print(f"Error processing message: {str(e)}")
-
 @cl.on_message
 async def on_message(message: cl.Message):
     """Process user messages and generate responses."""
@@ -164,11 +107,13 @@ async def on_message(message: cl.Message):
         model_name = response_data.get("model_name", "AI")
         
         # Update the thinking message with the selected response
-        await thinking_msg.update(content=best_response)
+        thinking_msg.content = best_response
+        await thinking_msg.update()
         
     except Exception as e:
         error_message = f"An error occurred: {str(e)}"
-        await thinking_msg.update(content=error_message)
+        thinking_msg.content = error_message
+        await thinking_msg.update()
         print(f"Error processing message: {str(e)}")
 
 @cl.on_chat_end

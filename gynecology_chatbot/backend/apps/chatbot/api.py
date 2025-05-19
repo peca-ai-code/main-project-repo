@@ -1,5 +1,5 @@
 import os
-import asyncio
+import time
 import openai
 import google.generativeai as genai
 from django.conf import settings
@@ -9,9 +9,16 @@ openai.api_key = settings.OPENAI_API_KEY
 if settings.GEMINI_API_KEY:
     genai.configure(api_key=settings.GEMINI_API_KEY)
 
+# Keep the async functions but add synchronous versions
+
 async def get_openai_response(user_message, chat_history=None):
-    """Get response from OpenAI's GPT model."""
+    """Async version - kept for completeness but not used"""
+    return get_openai_response_sync(user_message, chat_history)
+
+def get_openai_response_sync(user_message, chat_history=None):
+    """Synchronous version for OpenAI response"""
     if not settings.OPENAI_API_KEY:
+        print("OpenAI API key is missing!")
         return "Error: OpenAI API key not configured."
     
     try:
@@ -28,21 +35,29 @@ async def get_openai_response(user_message, chat_history=None):
         messages.append({"role": "user", "content": user_message})
         
         # Call OpenAI API
-        client = openai.AsyncClient(api_key=settings.OPENAI_API_KEY)
-        response = await client.chat.completions.create(
+        client = openai.Client(api_key=settings.OPENAI_API_KEY)  # Use sync client
+        response = client.chat.completions.create(
             model=settings.OPENAI_MODEL,
             messages=messages,
             max_tokens=500,
             temperature=0.7
         )
         
+        print(f"OpenAI response generated successfully")
         return response.choices[0].message.content
+        
     except Exception as e:
+        print(f"OpenAI error: {str(e)}")
         return f"Error generating response from ChatGPT: {str(e)}"
 
 async def get_gemini_response(user_message, chat_history=None):
-    """Get response from Google's Gemini model."""
+    """Async version - kept for completeness but not used"""
+    return get_gemini_response_sync(user_message, chat_history)
+
+def get_gemini_response_sync(user_message, chat_history=None):
+    """Synchronous version for Gemini response"""
     if not settings.GEMINI_API_KEY:
+        print("Gemini API key is missing!")
         return "Error: Gemini API key not configured."
     
     try:
@@ -70,39 +85,37 @@ async def get_gemini_response(user_message, chat_history=None):
             "parts": [{"text": user_message}]
         })
         
-        # Make synchronous call in executor to be async-compatible
-        loop = asyncio.get_event_loop()
+        # Generate response
+        generation_config = {
+            "temperature": 0.7,
+            "max_output_tokens": 500,
+        }
         
-        # Define the function to call in the executor
-        def generate_response():
-            try:
-                # Initialize Gemini model
-                generation_config = {
-                    "temperature": 0.7,
-                    "max_output_tokens": 500,
-                }
-                
-                model = genai.GenerativeModel(
-                    model_name=settings.GEMINI_MODEL,
-                    generation_config=generation_config
-                )
-                
-                # Generate response
-                response = model.generate_content(formatted_history)
-                return response.text
-            except Exception as e:
-                return f"Error in Gemini generation: {str(e)}"
+        model = genai.GenerativeModel(
+            model_name=settings.GEMINI_MODEL,
+            generation_config=generation_config
+        )
         
-        # Run in executor
-        response_text = await loop.run_in_executor(None, generate_response)
-        return response_text
+        response = model.generate_content(formatted_history)
+        print(f"Gemini response generated successfully")
         
+        if hasattr(response, 'text'):
+            return response.text
+        else:
+            return "Error: Gemini returned an unexpected response format."
+            
     except Exception as e:
+        print(f"Gemini error: {str(e)}")
         return f"Error generating response from Gemini: {str(e)}"
 
 async def get_grok_response(user_message, chat_history=None):
-    """Simulate a response from Grok (as no public API exists yet)."""
-    await asyncio.sleep(1)  # Simulate API delay
+    """Async version - kept for completeness but not used"""
+    return get_grok_response_sync(user_message, chat_history)
+
+def get_grok_response_sync(user_message, chat_history=None):
+    """Synchronous version for simulated Grok response"""
+    # Simulate API delay
+    time.sleep(1) 
     
     return (
         f"As your gynecology assistant, I understand you're asking about '{user_message[:30]}...'. "
