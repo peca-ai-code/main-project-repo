@@ -1,19 +1,20 @@
-# Multi-LLM AI Assistant
+# Gynecology Assistant
 
-Welcome to the Multi-LLM AI Assistant. This chat interface leverages multiple AI models and intelligently selects the best response for your query.
+Welcome to the Gynecology Assistant. This chat interface provides information and guidance about gynecological health concerns.
 
-## Features
+## About This Assistant
 
-- **Multiple AI Models**: Your questions are processed by several AI models
-- **Smart Response Selection**: Advanced evaluation selects the best response
-- **Conversation History**: Your chat history is saved for context
+This assistant is designed to:
+- Provide clear, accurate, and concise information about gynecological topics
+- Emphasize when symptoms are likely benign
+- Always recommend consulting a healthcare provider for proper diagnosis
+- Never provide definitive diagnoses
+- Be supportive, informative, and reassuring
+- Use professional but accessible language
 
-## How It Works
+## Important Note
 
-1. Your question is sent to multiple AI models simultaneously  
-2. Each model generates its own response
-3. A specialized evaluation system compares all responses
-4. The highest quality response is selected and presented to you
+This chat assistant is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician with any questions you may have regarding a medical condition.
 
 ## Get Started
 

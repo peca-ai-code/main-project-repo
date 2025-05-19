@@ -25,7 +25,7 @@ unsafe_allow_html = false
 latex = false
 
 # Authorize users to upload files with messages
-multi_modal = false
+multi_modal = true
 
 # Allows user to use speech to text
 [features.speech_to_text]
@@ -35,13 +35,13 @@ multi_modal = false
 
 [UI]
 # Name of the app and chatbot.
-name = "Gynacologist"
+name = "Chatbot"
 
 # Show the readme while the thread is empty.
-show_readme_as_default = false
+show_readme_as_default = true
 
 # Description of the app and chatbot. This is used for HTML tags.
-# description = "this is a test chatbot"
+# description = ""
 
 # Large size content are by default collapsed for a cleaner ui
 default_collapse_content = true
@@ -53,7 +53,7 @@ default_expand_messages = false
 hide_cot = false
 
 # Link to your github repo. This will add a github button in the UI's header.
-# github = "https://github.com/peca-ai-code/verbose-happiness.git"
+# github = ""
 
 # Specify a CSS file that can be used to customize the user interface.
 # The CSS file can be served from the public directory or via an external link.

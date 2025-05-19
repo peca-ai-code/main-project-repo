@@ -3,7 +3,6 @@ API client for communicating with the Django backend.
 """
 
 import aiohttp
-import json
 import os
 from typing import Dict, Any, Optional, List
 
@@ -52,6 +51,9 @@ class DjangoAPIClient:
             ) as response:
                 if response.status in (200, 201):
                     return await response.json()
+                else:
+                    error_text = await response.text()
+                    print(f"API Error: {response.status} - {error_text}")
                 return None
         except Exception as e:
             print(f"API request error: {str(e)}")
@@ -63,7 +65,8 @@ class DjangoAPIClient:
             session = await self._get_session()
             async with session.get(f"{self.base_url}/health/") as response:
                 return response.status == 200
-        except Exception:
+        except Exception as e:
+            print(f"Health check error: {str(e)}")
             return False
     
     async def authenticate(self, token: str) -> bool:

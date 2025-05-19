@@ -1,25 +1,14 @@
-# Virtual Gynecology Assistant
+# Welcome to Chainlit! 🚀🤖
 
-Welcome to the Virtual Gynecology Assistant. This chat interface provides information and guidance about gynecological health concerns using multiple AI models.
+Hi there, Developer! 👋 We're excited to have you on board. Chainlit is a powerful tool designed to help you prototype, debug and share applications built on top of LLMs.
 
-## How to Use
+## Useful Links 🔗
 
-Simply type your question or concern in the chat box below and press Enter. You will receive responses from:
+- **Documentation:** Get started with our comprehensive [Chainlit Documentation](https://docs.chainlit.io) 📚
+- **Discord Community:** Join our friendly [Chainlit Discord](https://discord.gg/k73SQ3FyUh) to ask questions, share your projects, and connect with other developers! 💬
 
-1. **ChatGPT** - OpenAI's GPT model
-2. **Gemini** - Google's Gemini model
-3. **Grok** - (Simulated response as API is not publicly available)
+We can't wait to see what you create with Chainlit! Happy coding! 💻😊
 
-## Features
+## Welcome screen
 
-- **Multiple AI Models**: Compare responses from different language models
-- **Conversation History**: Your chat history is saved for context
-- **User Settings**: Customize which model to use as primary
-
-## Important Note
-
-This chat assistant is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician with any questions you may have regarding a medical condition.
-
-## Get Started
-
-Type your question below to begin!
+To modify the welcome screen, edit the `chainlit.md` file at the root of your project. If you do not want a welcome screen, just leave this file empty.

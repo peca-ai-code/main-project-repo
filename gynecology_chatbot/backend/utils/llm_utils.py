@@ -25,7 +25,7 @@ async def generate_all_responses(user_message: str, chat_history: List[Any]) -> 
     models = ["openai", "gemini", "grok"]
     
     for i, response in enumerate(responses):
-        if not isinstance(response, Exception):
+        if not isinstance(response, Exception) and response and not response.startswith("Error"):
             response_dict[models[i]] = response
     
     return response_dict
@@ -51,9 +51,14 @@ async def evaluate_responses(responses: Dict[str, str], user_message: str) -> Tu
         return "system", "I'm sorry, all AI models are currently unavailable. Please try again later.", ""
     
     try:
+        # If Gemini API key is not available, return the first response
+        if not settings.GEMINI_API_KEY:
+            model_name = list(responses.keys())[0]
+            return model_name, responses[model_name], "Evaluation not available."
+        
         # Prepare the prompt for Gemini evaluation
         evaluation_prompt = f"""
-        You are an expert evaluator of AI assistant responses. Your job is to select the best response to a user's query.
+        You are an expert evaluator of AI assistant responses. Your job is to select the best response to a user's query about gynecological health.
         
         User query: "{user_message}"
         
@@ -69,6 +74,7 @@ async def evaluate_responses(responses: Dict[str, str], user_message: str) -> Tu
         1. Accuracy and relevance to the query
         2. Helpfulness and comprehensiveness
         3. Clarity and readability
+        4. Medical appropriateness (not giving definitive diagnoses, recommending professional consultation when needed)
         
         Select the BEST response and provide a brief explanation of why it was selected.
         

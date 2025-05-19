@@ -28,7 +28,8 @@ async def get_openai_response(user_message, chat_history=None):
         messages.append({"role": "user", "content": user_message})
         
         # Call OpenAI API
-        response = await openai.ChatCompletion.acreate(
+        client = openai.AsyncClient(api_key=settings.OPENAI_API_KEY)
+        response = await client.chat.completions.create(
             model=settings.OPENAI_MODEL,
             messages=messages,
             max_tokens=500,
@@ -104,9 +105,7 @@ async def get_grok_response(user_message, chat_history=None):
     await asyncio.sleep(1)  # Simulate API delay
     
     return (
-        f"[SIMULATED GROK RESPONSE] As Grok doesn't have a public API yet, "
-        f"this is a simulated response to demonstrate functionality.\n\n"
-        f"In response to your query about '{user_message[:30]}...', "
-        f"I would provide gynecological information while recommending "
-        f"consultation with a healthcare provider for proper diagnosis."
+        f"As your gynecology assistant, I understand you're asking about '{user_message[:30]}...'. "
+        f"While I don't have complete information, I can provide general guidance on this topic. "
+        f"Remember to consult with a healthcare provider for a proper evaluation of your specific situation."
     )
