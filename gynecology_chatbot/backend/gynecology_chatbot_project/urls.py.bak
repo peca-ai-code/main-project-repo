@@ -11,7 +11,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     
     # Health check endpoint
-    path('api/', include('utils.urls')),
+    path('api/health/', health_check),
     
     # API endpoints
     path('api/users/', include('apps.users.urls')),
