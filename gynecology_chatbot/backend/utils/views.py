@@ -8,3 +8,7 @@ def health_check(request):
 def redirect_to_admin(request):
     """Redirect root URL to admin interface."""
     return redirect('admin:index')
+
+def redirect_to_appointments(request):
+    """Redirect to the appointments page."""
+    return redirect('/appointments/')
