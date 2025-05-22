@@ -1,14 +1,21 @@
-# Welcome to Chainlit! 🚀🤖
+# Gynecology Assistant
 
-Hi there, Developer! 👋 We're excited to have you on board. Chainlit is a powerful tool designed to help you prototype, debug and share applications built on top of LLMs.
+Welcome to the Gynecology Assistant. This chat interface provides information and guidance about gynecological health concerns.
 
-## Useful Links 🔗
+## About This Assistant
 
-- **Documentation:** Get started with our comprehensive [Chainlit Documentation](https://docs.chainlit.io) 📚
-- **Discord Community:** Join our friendly [Chainlit Discord](https://discord.gg/k73SQ3FyUh) to ask questions, share your projects, and connect with other developers! 💬
+This assistant is designed to:
+- Provide clear, accurate, and concise information about gynecological topics
+- Emphasize when symptoms are likely benign
+- Always recommend consulting a healthcare provider for proper diagnosis
+- Never provide definitive diagnoses
+- Be supportive, informative, and reassuring
+- Use professional but accessible language
 
-We can't wait to see what you create with Chainlit! Happy coding! 💻😊
+## Important Note
 
-## Welcome screen
+This chat assistant is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician with any questions you may have regarding a medical condition.
 
-To modify the welcome screen, edit the `chainlit.md` file at the root of your project. If you do not want a welcome screen, just leave this file empty.
+## Get Started
+
+Type your question below to begin!

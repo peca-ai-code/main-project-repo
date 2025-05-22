@@ -14,7 +14,10 @@ cache = false
 # Follow symlink for asset mount (see https://github.com/Chainlit/chainlit/issues/317)
 # follow_symlink = false
 
+
 [features]
+# Enable chat history
+chat_history = true
 # Show the prompt playground
 prompt_playground = true
 
