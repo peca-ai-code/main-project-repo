@@ -39,8 +39,7 @@ async def on_chat_start():
     
     if not backend_status:
         await cl.Message(
-            content="⚠️ Warning: Could not connect to the backend server. Please try again later.",
-            author="System"
+            content="⚠️ Warning: Could not connect to the backend server. Please try again later."
         ).send()
         return
     
@@ -53,18 +52,15 @@ async def on_chat_start():
             
             # Welcome message
             await cl.Message(
-                content="Welcome to the Gynecology Assistant. I'm here to provide information and support regarding gynecological health concerns. How can I help you today?",
-                author="Assistant"
+                content="Welcome to the Gynecology Assistant. I'm here to provide information and support regarding gynecological health concerns. How can I help you today?"
             ).send()
         else:
             await cl.Message(
-                content="⚠️ Error: Could not create conversation. Please check your API token.",
-                author="System"
+                content="⚠️ Error: Could not create conversation. Please check your API token."
             ).send()
     except Exception as e:
         await cl.Message(
-            content=f"⚠️ Error starting chat: {str(e)}",
-            author="System"
+            content=f"⚠️ Error starting chat: {str(e)}"
         ).send()
 
 def assess_severity(response_text):
@@ -119,20 +115,14 @@ async def on_message(message: cl.Message):
                 cl.user_session.set("conversation_id", conversation_id)
             else:
                 await cl.Message(
-                    content="Error: Could not create conversation. Please refresh and try again.",
-                    author="System"
+                    content="Error: Could not create conversation. Please refresh and try again."
                 ).send()
                 return
         except Exception as e:
             await cl.Message(
-                content=f"Error creating conversation: {str(e)}",
-                author="System"
+                content=f"Error creating conversation: {str(e)}"
             ).send()
             return
-    
-    # Send thinking message
-    thinking_msg = cl.Message(content="Thinking...", author="Assistant")
-    await thinking_msg.send()
     
     try:
         # Send message to API and get AI response
@@ -154,21 +144,24 @@ async def on_message(message: cl.Message):
         severity = assess_severity(best_response)
         print(f"Response severity assessment: {severity}/10")
         
-        # Update the thinking message with the selected response
-        thinking_msg.content = best_response
-        
         # Add appointment booking button only if severity is high (>= 6)
         if severity >= 4:
-            thinking_msg.actions = [
+            actions = [
                 cl.Action(
                     name="book_appointment", 
+                    icon="mouse-pointer-click",
+                    payload={"value": "example_value"},
                     value="book_appointment", 
                     label="🩺 Book a Doctor's Appointment",
                     description="Schedule a consultation with a gynecologist"
                 )
             ]
+            thinking_msg = cl.Message(content=best_response, actions=actions)
+            await thinking_msg.send()
+        else:
+            thinking_msg = cl.Message(content=best_response)
+            await thinking_msg.send()
         
-        await thinking_msg.update()
         
     except Exception as e:
         error_message = f"An error occurred: {str(e)}"
@@ -187,24 +180,3 @@ async def on_book_appointment(action):
     """Handle booking appointment button click."""
     appointments_url = "http://localhost:9000/appointments/"
     webbrowser.open(appointments_url)
-
-# Add a clear conversation action button
-@cl.action_callback("clear_conversation")
-async def clear_conversation(action):
-    """Clear the current conversation."""
-    conversation_id = cl.user_session.get("conversation_id")
-    
-    if conversation_id:
-        # Clear conversation in backend
-        success = await api_client.clear_conversation(conversation_id)
-        
-        if success:
-            await cl.Message(
-                content="Conversation cleared successfully.",
-                author="System"
-            ).send()
-        else:
-            await cl.Message(
-                content="Failed to clear conversation. Please try again.",
-                author="System"
-            ).send()
