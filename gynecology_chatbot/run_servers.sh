@@ -4,7 +4,7 @@
 echo "Starting Django backend on port 9000..."
 cd backend
 source venv/bin/activate
-python manage.py runserver 9000 &
+python3 manage.py runserver 9000 &
 BACKEND_PID=$!
 deactivate
 cd ..
@@ -13,7 +13,7 @@ cd ..
 sleep 3
 
 # Start the Chainlit frontend
-echo "Starting Chainlit frontend on port 8000..."
+echo "Starting Chainlit frontend on port 8001..."
 cd chainlit_app
 source venv/bin/activate
 chainlit run app.py --port 8001 &
@@ -26,7 +26,7 @@ trap 'echo "Shutting down servers..."; kill $BACKEND_PID; kill $FRONTEND_PID; ex
 
 echo "Both servers are running:"
 echo "- Backend: http://localhost:9000/admin"
-echo "- Frontend: http://localhost:8000"
+echo "- Frontend: http://localhost:8001"
 echo ""
 echo "Press Ctrl+C to stop."
 wait
