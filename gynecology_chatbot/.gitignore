@@ -25,6 +25,7 @@ __pycache__/
 *.egg-info
 *.DS_Store
 *.md
+
 # Dependencies
 node_modules/
 npm-debug.log*
