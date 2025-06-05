@@ -1,5 +1,0 @@
-// Create a .babelrc file:
-
-{
-  "presets": ["@babel/preset-env", "@babel/preset-typescript"]
-}
