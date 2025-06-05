@@ -35,7 +35,7 @@ def get_openai_response_sync(user_message, chat_history=None):
         messages.append({"role": "user", "content": user_message})
         
         # Call OpenAI API
-        client = openai.Client(api_key=settings.OPENAI_API_KEY)  # Use sync client
+        client = openai.Client(api_key=settings.OPENAI_API_KEY)
         response = client.chat.completions.create(
             model=settings.OPENAI_MODEL,
             messages=messages,
@@ -55,54 +55,57 @@ async def get_gemini_response(user_message, chat_history=None):
     return get_gemini_response_sync(user_message, chat_history)
 
 def get_gemini_response_sync(user_message, chat_history=None):
-    """Synchronous version for Gemini response"""
+    """Synchronous version for Gemini response with updated API"""
     if not settings.GEMINI_API_KEY:
         print("Gemini API key is missing!")
         return "Error: Gemini API key not configured."
     
     try:
-        # Format history for Gemini
-        formatted_history = []
+        # Initialize the model with updated API
+        model = genai.GenerativeModel(
+            model_name=settings.GEMINI_MODEL,
+            generation_config=genai.GenerationConfig(
+                temperature=0.7,
+                max_output_tokens=500,
+                top_k=40,
+                top_p=0.95,
+            ),
+            system_instruction=settings.GYNECOLOGY_SYSTEM_PROMPT
+        )
         
-        # Add system instruction
-        formatted_history.append({
-            "role": "user",
-            "parts": [{"text": settings.GYNECOLOGY_SYSTEM_PROMPT}]
-        })
+        # Format chat history for the new API
+        chat_messages = []
         
         # Add chat history if provided
         if chat_history:
             for msg in chat_history:
                 role = "user" if msg.message_type == "user" else "model"
-                formatted_history.append({
+                chat_messages.append({
                     "role": role,
-                    "parts": [{"text": msg.content}]
+                    "parts": [msg.content]
                 })
         
         # Add current user message
-        formatted_history.append({
-            "role": "user",
-            "parts": [{"text": user_message}]
+        chat_messages.append({
+            "role": "user", 
+            "parts": [user_message]
         })
         
-        # Generate response
-        generation_config = {
-            "temperature": 0.7,
-            "max_output_tokens": 500,
-        }
+        # Generate response using the updated API
+        if chat_messages:
+            # Start chat with history
+            chat = model.start_chat(history=chat_messages[:-1])
+            response = chat.send_message(user_message)
+        else:
+            # Single message
+            response = model.generate_content(user_message)
         
-        model = genai.GenerativeModel(
-            model_name=settings.GEMINI_MODEL,
-            generation_config=generation_config
-        )
-        
-        response = model.generate_content(formatted_history)
         print(f"Gemini response generated successfully")
         
-        if hasattr(response, 'text'):
+        if hasattr(response, 'text') and response.text:
             return response.text
         else:
-            return "Error: Gemini returned an unexpected response format."
+            return "Error: Gemini returned an empty response."
             
     except Exception as e:
         print(f"Gemini error: {str(e)}")

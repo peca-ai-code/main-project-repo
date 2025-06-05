@@ -14,7 +14,7 @@ import webbrowser
 # Load environment variables
 load_dotenv()
 
-# Configure Gemini for severity assessment with new API
+# Configure Gemini for severity assessment
 if os.getenv("GEMINI_API_KEY"):
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
@@ -64,23 +64,13 @@ async def on_chat_start():
         ).send()
 
 def assess_severity(response_text):
-    """Assess the severity of a health-related response on a scale of 1-10 using new Gemini API."""
+    """Assess the severity of a health-related response on a scale of 1-10."""
     try:
         if not os.getenv("GEMINI_API_KEY"):
             print("Gemini API key is missing!")
             return 3  # Default moderate severity if no API key
         
-        # Use the new Gemini API
-        model = genai.GenerativeModel(
-            model_name='gemini-1.5-flash',
-            generation_config=genai.GenerationConfig(
-                temperature=0.1,
-                max_output_tokens=10,
-                top_k=1,
-                top_p=0.1,
-            )
-        )
-        
+        model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = f"""
         As a medical assessment system, analyze the following gynecological health response and rate its severity on a scale of 1-10.
         1 = Completely routine, no concerns
@@ -143,7 +133,7 @@ async def on_message(message: cl.Message):
         
         if not response_data:
             # Handle API error
-            await cl.Message(content="Sorry, I encountered an error communicating with the backend. Please try again.").send()
+            await thinking_msg.update(content="Sorry, I encountered an error communicating with the backend. Please try again.")
             return
         
         # Get the best response
@@ -154,7 +144,7 @@ async def on_message(message: cl.Message):
         severity = assess_severity(best_response)
         print(f"Response severity assessment: {severity}/10")
         
-        # Add appointment booking button only if severity is high (>= 4)
+        # Add appointment booking button only if severity is high (>= 6)
         if severity >= 4:
             actions = [
                 cl.Action(
@@ -175,7 +165,8 @@ async def on_message(message: cl.Message):
         
     except Exception as e:
         error_message = f"An error occurred: {str(e)}"
-        await cl.Message(content=error_message).send()
+        thinking_msg.content = error_message
+        await thinking_msg.update()
         print(f"Error processing message: {str(e)}")
 
 @cl.on_chat_end

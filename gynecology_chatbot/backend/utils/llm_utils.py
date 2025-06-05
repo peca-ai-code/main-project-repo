@@ -6,7 +6,7 @@ import threading
 import time
 from apps.chatbot.api import get_openai_response_sync, get_gemini_response_sync, get_grok_response_sync
 
-# Configure Gemini for evaluation
+# Configure Gemini for evaluation with new API
 if settings.GEMINI_API_KEY:
     genai.configure(api_key=settings.GEMINI_API_KEY)
 
