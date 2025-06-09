@@ -17,6 +17,8 @@ urlpatterns = [
     path('api/users/', include('apps.users.urls')),
     path('api/chatbot/', include('apps.chatbot.urls')),
     
+        path('api/doctors/', include('doctors.urls')),
+
     # JWT Authentication
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),

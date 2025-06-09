@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     
     # Local apps
+    'doctors',
     'apps.users',
     'apps.chatbot',
     'appointments',
@@ -98,6 +99,14 @@ AUTH_PASSWORD_VALIDATORS = [
 # Custom user model
 AUTH_USER_MODEL = 'users.User'
 
+# Custom authentication
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# JWT will use email as username
+AUTH_USER_MODEL = 'users.User'
+
 # Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
@@ -126,7 +135,7 @@ REST_FRAMEWORK = {
 
 # JWT settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=4),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
@@ -164,3 +173,4 @@ Professional Simplicity: Use accessible language that conveys medical profession
 Remember: Impact over length. Make every word count. Be the caring, knowledgeable voice that gets to the heart of what matters most.
 and dont use the term visit docotor to often as it doesnt sound natural like a dctor would say.
 """
+
