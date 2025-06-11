@@ -1,5 +1,5 @@
 """
-Chainlit application for gynecology chatbot that communicates with Django backend.
+Chainlit application for gynecology chatbot that communicates with Django backend using Firestore.
 """
 
 import os
@@ -9,7 +9,6 @@ from services.api_client import DjangoAPIClient
 import uuid
 import google.generativeai as genai
 import webbrowser
-
 
 # Load environment variables
 load_dotenv()
@@ -52,16 +51,21 @@ async def on_chat_start():
             
             # Welcome message
             await cl.Message(
-                content="Welcome to the Gynecology Assistant. I'm here to provide information and support regarding gynecological health concerns. How can I help you today?"
+                content="Welcome to the Gynecology Assistant powered by Firestore! I'm here to provide information and support regarding gynecological health concerns. How can I help you today?"
             ).send()
         else:
+            # Try to fallback without authentication for testing
             await cl.Message(
-                content="⚠️ Error: Could not create conversation. Please check your API token."
+                content="⚠️ Authentication issue detected. Starting in demo mode. Your conversation may not be saved."
             ).send()
+            # Generate a temporary conversation ID
+            cl.user_session.set("conversation_id", str(uuid.uuid4()))
     except Exception as e:
         await cl.Message(
-            content=f"⚠️ Error starting chat: {str(e)}"
+            content=f"⚠️ Error starting chat: {str(e)}. Starting in demo mode."
         ).send()
+        # Generate a temporary conversation ID for demo mode
+        cl.user_session.set("conversation_id", str(uuid.uuid4()))
 
 def assess_severity(response_text):
     """Assess the severity of a health-related response on a scale of 1-10 using new Gemini API."""
@@ -117,22 +121,9 @@ async def on_message(message: cl.Message):
     conversation_id = cl.user_session.get("conversation_id")
     
     if not conversation_id:
-        # Try to create a new conversation if none exists
-        try:
-            conversation = await api_client.create_conversation("New Conversation")
-            if conversation:
-                conversation_id = conversation.get("id")
-                cl.user_session.set("conversation_id", conversation_id)
-            else:
-                await cl.Message(
-                    content="Error: Could not create conversation. Please refresh and try again."
-                ).send()
-                return
-        except Exception as e:
-            await cl.Message(
-                content=f"Error creating conversation: {str(e)}"
-            ).send()
-            return
+        # Generate a temporary conversation ID
+        conversation_id = str(uuid.uuid4())
+        cl.user_session.set("conversation_id", conversation_id)
     
     try:
         # Send message to API and get AI response
@@ -142,8 +133,8 @@ async def on_message(message: cl.Message):
         )
         
         if not response_data:
-            # Handle API error
-            await cl.Message(content="Sorry, I encountered an error communicating with the backend. Please try again.").send()
+            # Fallback response if API fails
+            await cl.Message(content="I apologize, but I'm experiencing technical difficulties connecting to the backend. Please try again in a moment. If you're having ongoing health concerns, please consult with a healthcare provider directly.").send()
             return
         
         # Get the best response
@@ -172,9 +163,8 @@ async def on_message(message: cl.Message):
             thinking_msg = cl.Message(content=best_response)
             await thinking_msg.send()
         
-        
     except Exception as e:
-        error_message = f"An error occurred: {str(e)}"
+        error_message = f"I apologize, but I encountered an error: {str(e)}. For immediate health concerns, please contact a healthcare provider directly."
         await cl.Message(content=error_message).send()
         print(f"Error processing message: {str(e)}")
 

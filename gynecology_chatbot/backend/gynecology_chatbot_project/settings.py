@@ -174,3 +174,47 @@ Remember: Impact over length. Make every word count. Be the caring, knowledgeabl
 and dont use the term visit docotor to often as it doesnt sound natural like a dctor would say.
 """
 
+# Google Cloud Firestore Configuration
+GOOGLE_CLOUD_PROJECT = os.environ.get('GOOGLE_CLOUD_PROJECT', 'gynecology-chatbot-fresh-2025')
+GOOGLE_APPLICATION_CREDENTIALS = os.path.join(BASE_DIR, 'firestore-key.json')
+
+# Database Selection Mode
+USE_FIRESTORE = os.environ.get('USE_FIRESTORE', 'False') == 'True'
+
+# Firestore settings
+FIRESTORE_SETTINGS = {
+    'project_id': GOOGLE_CLOUD_PROJECT,
+    'credentials_path': GOOGLE_APPLICATION_CREDENTIALS,
+    'collections': {
+        'users': 'users',
+        'conversations': 'conversations', 
+        'messages': 'messages',
+        'doctors': 'doctors',
+        'appointments': 'appointments',
+        'patient_queries': 'patient_queries',
+    }
+}
+
+# Add logging for Firestore operations
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'firestore.log'),
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'firestore': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}

@@ -1,5 +1,5 @@
 """
-API client for communicating with the Django backend.
+API client for communicating with the Django backend using Firestore.
 """
 
 import aiohttp
@@ -51,6 +51,12 @@ class DjangoAPIClient:
             ) as response:
                 if response.status in (200, 201):
                     return await response.json()
+                elif response.status == 401:
+                    print(f"Authentication failed: {response.status}")
+                    # Try without authentication for Firestore endpoints
+                    if not authenticate:
+                        return None
+                    return await self._request(method, endpoint, data, params, authenticate=False)
                 else:
                     error_text = await response.text()
                     print(f"API Error: {response.status} - {error_text}")
@@ -63,68 +69,51 @@ class DjangoAPIClient:
         """Check if the backend is available."""
         try:
             session = await self._get_session()
+            # Try Firestore health endpoint first
+            async with session.get(f"{self.base_url}/chatbot/health/") as response:
+                if response.status == 200:
+                    return True
+            
+            # Fallback to general health endpoint
             async with session.get(f"{self.base_url}/health/") as response:
                 return response.status == 200
         except Exception as e:
             print(f"Health check error: {str(e)}")
             return False
     
-    async def authenticate(self, token: str) -> bool:
-        """Authenticate with the backend using a token."""
-        self.token = token
-        
-        # Try to get user profile to verify token
-        user_data = await self._request("GET", "users/me/")
-        return user_data is not None
-    
-    async def get_user_settings(self) -> Optional[Dict[str, Any]]:
-        """Get the current user's settings."""
-        user_data = await self._request("GET", "users/me/")
-        
-        if user_data:
-            return {
-                "preferred_model": user_data.get("preferred_model", "openai"),
-                "show_all_models": user_data.get("show_all_models", True)
-            }
-        return None
-    
     async def create_conversation(self, title: str) -> Optional[Dict[str, Any]]:
         """Create a new conversation."""
         data = {"title": title}
-        return await self._request("POST", "chatbot/conversations/", data=data)
-    
-    async def get_conversations(self) -> List[Dict[str, Any]]:
-        """Get the list of conversations for the current user."""
-        response = await self._request("GET", "chatbot/conversations/")
-        return response or []
-    
-    async def get_conversation(self, conversation_id: int) -> Optional[Dict[str, Any]]:
-        """Get a specific conversation with its messages."""
-        return await self._request("GET", f"chatbot/conversations/{conversation_id}/")
+        result = await self._request("POST", "chatbot/conversations/", data=data)
+        if not result:
+            # Try without authentication
+            result = await self._request("POST", "chatbot/conversations/", data=data, authenticate=False)
+        return result
     
     async def send_message(
         self,
-        conversation_id: int,
+        conversation_id: str,
         message: str,
     ) -> Optional[Dict[str, Any]]:
         """Send a message to the conversation and get AI response."""
-        data = {
-            "message": message
-        }
+        data = {"message": message}
         
-        return await self._request(
+        result = await self._request(
             "POST", 
             f"chatbot/conversations/{conversation_id}/send_message/", 
             data=data
         )
-    
-    async def clear_conversation(self, conversation_id: int) -> bool:
-        """Clear all messages in a conversation."""
-        response = await self._request(
-            "DELETE", 
-            f"chatbot/conversations/{conversation_id}/clear/"
-        )
-        return response is not None
+        
+        if not result:
+            # Try without authentication
+            result = await self._request(
+                "POST", 
+                f"chatbot/conversations/{conversation_id}/send_message/", 
+                data=data,
+                authenticate=False
+            )
+        
+        return result
     
     async def close(self):
         """Close the aiohttp session."""
