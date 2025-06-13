@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'doctors',
     'apps.users',
     'apps.chatbot',
+    'apps.appointments_api',  # New appointments API
     'appointments',
 ]
 
