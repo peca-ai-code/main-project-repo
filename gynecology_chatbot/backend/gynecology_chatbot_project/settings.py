@@ -34,7 +34,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'rest_framework_simplejwt',
-    'allauth',  # Add these OAuth apps
+    'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
@@ -43,9 +43,9 @@ INSTALLED_APPS = [
     'doctors',
     'apps.users',
     'apps.chatbot',
-    'apps.appointments_api',  # New appointments API
+    'apps.appointments_api',
     'appointments',
-    'oauth_integration',
+    'oauth_integration',  # Make sure this is here
 ]
 
 MIDDLEWARE = [
