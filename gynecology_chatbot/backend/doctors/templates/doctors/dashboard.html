@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard - WomanCare</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        const DoctorDashboard = () => {
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+            const [doctorData, setDoctorData] = useState(null);
+            const [dashboardStats, setDashboardStats] = useState(null);
+            const [appointments, setAppointments] = useState([]);
+            const [queries, setQueries] = useState([]);
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState('');
+            const [showRegistration, setShowRegistration] = useState(false);
+
+            const API_BASE = 'http://localhost:9000/api';
+            const getToken = () => localStorage.getItem('doctorToken');
+            const getHeaders = () => ({
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            });
+
+            const handleLogin = async (email, password) => {
+                try {
+                    setLoading(true);
+                    setError('');
+                    
+                    const response = await fetch(`${API_BASE}/doctors/token/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        localStorage.setItem('doctorToken', data.access);
+                        setIsLoggedIn(true);
+                        loadDashboardData();
+                    } else {
+                        const errorData = await response.json();
+                        setError(errorData.detail || 'Invalid credentials. Please check email/password.');
+                    }
+                } catch (err) {
+                    setError('Login failed. Please ensure the backend server is running.');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const loadDashboardData = async () => {
+                try {
+                    setLoading(true);
+                    
+                    const profileRes = await fetch(`${API_BASE}/doctors/profile/me/`, {
+                        headers: getHeaders()
+                    });
+                    
+                    if (profileRes.ok) {
+                        const profile = await profileRes.json();
+                        setDoctorData(profile);
+                    }
+                    
+                    const statsRes = await fetch(`${API_BASE}/doctors/dashboard/stats/`, {
+                        headers: getHeaders()
+                    });
+                    
+                    if (statsRes.ok) {
+                        const stats = await statsRes.json();
+                        setDashboardStats(stats);
+                    }
+                    
+                    const appointmentsRes = await fetch(`${API_BASE}/doctors/appointments/`, {
+                        headers: getHeaders()
+                    });
+                    
+                    if (appointmentsRes.ok) {
+                        const appointmentsData = await appointmentsRes.json();
+                        setAppointments(appointmentsData.results || appointmentsData);
+                    }
+                    
+                    const queriesRes = await fetch(`${API_BASE}/doctors/queries/`, {
+                        headers: getHeaders()
+                    });
+                    
+                    if (queriesRes.ok) {
+                        const queriesData = await queriesRes.json();
+                        setQueries(queriesData.results || queriesData);
+                    }
+                    
+                } catch (err) {
+                    setError('Failed to load dashboard data. Please refresh the page.');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const updateAppointmentStatus = async (appointmentId, action) => {
+                try {
+                    const response = await fetch(`${API_BASE}/doctors/appointments/${appointmentId}/${action}/`, {
+                        method: 'POST',
+                        headers: getHeaders(),
+                        body: JSON.stringify({})
+                    });
+                    
+                    if (response.ok) {
+                        loadDashboardData();
+                        setError('');
+                    } else {
+                        setError(`Failed to ${action} appointment`);
+                    }
+                } catch (err) {
+                    setError(`Error updating appointment: ${err.message}`);
+                }
+            };
+
+            const toggleAvailability = async () => {
+                try {
+                    const newStatus = !dashboardStats?.is_available;
+                    const response = await fetch(`${API_BASE}/doctors/profile/update_availability/`, {
+                        method: 'POST',
+                        headers: getHeaders(),
+                        body: JSON.stringify({ is_available: newStatus })
+                    });
+                    
+                    if (response.ok) {
+                        loadDashboardData();
+                    }
+                } catch (err) {
+                    setError('Failed to update availability');
+                }
+            };
+
+            useEffect(() => {
+                const token = getToken();
+                if (token) {
+                    setIsLoggedIn(true);
+                    loadDashboardData();
+                }
+            }, []);
+
+            const DoctorRegistrationForm = () => {
+                const [formData, setFormData] = useState({
+                    full_name: '',
+                    email: '',
+                    phone: '',
+                    qualification: '',
+                    experience_years: '',
+                    specialty: '',
+                    clinic_name: '',
+                    message: ''
+                });
+
+                const handleSubmit = async (e) => {
+                    e.preventDefault();
+                    try {
+                        const response = await fetch(`${API_BASE}/doctors/register/`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(formData)
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            alert(`Registration successful! Reference ID: ${result.reference_id}`);
+                            setShowRegistration(false);
+                        }
+                    } catch (err) {
+                        alert('Registration failed. Please try again.');
+                    }
+                };
+
+                return (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 max-h-screen overflow-y-auto">
+                            <h2 className="text-2xl font-bold mb-6 text-gray-800">Doctor Registration</h2>
+                            
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <input
+                                    type="text"
+                                    placeholder="Full Name"
+                                    value={formData.full_name}
+                                    onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500"
+                                    required
+                                />
+                                
+                                <input
+                                    type="email"
+                                    placeholder="Email"
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500"
+                                    required
+                                />
+                                
+                                <input
+                                    type="tel"
+                                    placeholder="Phone Number"
+                                    value={formData.phone}
+                                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500"
+                                    required
+                                />
+                                
+                                <textarea
+                                    placeholder="Qualifications"
+                                    value={formData.qualification}
+                                    onChange={(e) => setFormData({...formData, qualification: e.target.value})}
+                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500"
+                                    rows="3"
+                                    required
+                                />
+                                
+                                <input
+                                    type="number"
+                                    placeholder="Years of Experience"
+                                    value={formData.experience_years}
+                                    onChange={(e) => setFormData({...formData, experience_years: e.target.value})}
+                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500"
+                                    required
+                                />
+                                
+                                <select
+                                    value={formData.specialty}
+                                    onChange={(e) => setFormData({...formData, specialty: e.target.value})}
+                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500"
+                                    required
+                                >
+                                    <option value="">Select Specialty</option>
+                                    <option value="general_gynecology">General Gynecology</option>
+                                    <option value="obstetrics_gynecology">Obstetrics & Gynecology</option>
+                                    <option value="fertility_specialist">Fertility Specialist</option>
+                                    <option value="gynecologic_oncology">Gynecologic Oncology</option>
+                                    <option value="reproductive_endocrinology">Reproductive Endocrinology</option>
+                                </select>
+                                
+                                <input
+                                    type="text"
+                                    placeholder="Clinic Name (Optional)"
+                                    value={formData.clinic_name}
+                                    onChange={(e) => setFormData({...formData, clinic_name: e.target.value})}
+                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500"
+                                />
+                                
+                                <textarea
+                                    placeholder="Additional Message (Optional)"
+                                    value={formData.message}
+                                    onChange={(e) => setFormData({...formData, message: e.target.value})}
+                                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500"
+                                    rows="3"
+                                />
+                                
+                                <div className="flex space-x-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowRegistration(false)}
+                                        className="flex-1 py-3 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="flex-1 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-700"
+                                    >
+                                        Submit Registration
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                );
+            };
+
+            const LoginForm = () => {
+                const [email, setEmail] = useState('dr.admin@example.com');
+                const [password, setPassword] = useState('admin123');
+
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">
+                        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+                            <div className="text-center mb-8">
+                                <div className="mx-auto h-16 w-16 bg-pink-600 rounded-full flex items-center justify-center mb-4">
+                                    <span className="text-white text-2xl">🩺</span>
+                                </div>
+                                <h1 className="text-3xl font-bold text-gray-800">WomanCare</h1>
+                                <p className="text-gray-600 mt-2">Doctor Dashboard</p>
+                            </div>
+                            
+                            <form onSubmit={(e) => {
+                                e.preventDefault();
+                                handleLogin(email, password);
+                            }}>
+                                <div className="mb-4">
+                                    <label className="block text-gray-700 text-sm font-bold mb-2">
+                                        Email Address
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                        placeholder="doctor@example.com"
+                                        required
+                                    />
+                                </div>
+                                
+                                <div className="mb-6">
+                                    <label className="block text-gray-700 text-sm font-bold mb-2">
+                                        Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                        required
+                                    />
+                                </div>
+                                
+                                {error && (
+                                    <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                                        {error}
+                                    </div>
+                                )}
+                                
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-pink-700 hover:to-purple-700 disabled:opacity-50 font-semibold"
+                                >
+                                    {loading ? 'Logging in...' : 'Login to Dashboard'}
+                                </button>
+                            </form>
+                            
+                            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                                <p className="text-sm text-gray-600 font-medium mb-2">Demo Credentials:</p>
+                                <div className="text-sm text-gray-700 mb-3">
+                                    <p><strong>Email:</strong> dr.admin@example.com</p>
+                                    <p><strong>Password:</strong> admin123</p>
+                                </div>
+                                <button
+                                    onClick={() => setShowRegistration(true)}
+                                    className="w-full text-sm bg-blue-100 text-blue-800 py-2 rounded-lg hover:bg-blue-200"
+                                >
+                                    New Doctor? Register Here
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {showRegistration && <DoctorRegistrationForm />}
+                    </div>
+                );
+            };
+
+            const StatsCards = () => {
+                if (!dashboardStats) return <div className="text-center text-gray-500">Loading statistics...</div>;
+
+                const stats = [
+                    {
+                        title: "Today's Appointments",
+                        value: dashboardStats.total_appointments_today || 0,
+                        icon: '📅',
+                        color: 'bg-gradient-to-r from-blue-500 to-blue-600'
+                    },
+                    {
+                        title: 'Pending Appointments',
+                        value: dashboardStats.pending_appointments || 0,
+                        icon: '⏳',
+                        color: 'bg-gradient-to-r from-yellow-500 to-orange-500'
+                    },
+                    {
+                        title: 'Pending Queries',
+                        value: dashboardStats.pending_queries || 0,
+                        icon: '💬',
+                        color: 'bg-gradient-to-r from-green-500 to-emerald-500'
+                    },
+                    {
+                        title: 'High Priority',
+                        value: dashboardStats.high_severity_queries || 0,
+                        icon: '🚨',
+                        color: 'bg-gradient-to-r from-red-500 to-pink-500'
+                    },
+                    {
+                        title: 'Total Patients',
+                        value: dashboardStats.total_patients || 0,
+                        icon: '👥',
+                        color: 'bg-gradient-to-r from-purple-500 to-indigo-500'
+                    },
+                    {
+                        title: 'Availability',
+                        value: dashboardStats.is_available ? 'Available' : 'Unavailable',
+                        icon: dashboardStats.is_available ? '🟢' : '🔴',
+                        color: dashboardStats.is_available ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-gray-500 to-gray-600'
+                    }
+                ];
+
+                return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                        {stats.map((stat, index) => (
+                            <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <div className={`${stat.color} text-white p-4 rounded-xl text-2xl mr-4`}>
+                                            {stat.icon}
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-600 text-sm font-medium">{stat.title}</p>
+                                            <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
+                                        </div>
+                                    </div>
+                                    {index === 5 && (
+                                        <button
+                                            onClick={toggleAvailability}
+                                            className="px-3 py-1 bg-pink-600 text-white rounded-lg hover:bg-pink-700 text-sm"
+                                        >
+                                            Toggle
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                );
+            };
+
+            const AppointmentsTab = () => {
+                const getStatusColor = (status) => {
+                    const colors = {
+                        'pending': 'bg-yellow-100 text-yellow-800',
+                        'confirmed': 'bg-green-100 text-green-800',
+                        'completed': 'bg-blue-100 text-blue-800',
+                        'cancelled': 'bg-red-100 text-red-800'
+                    };
+                    return colors[status] || 'bg-gray-100 text-gray-800';
+                };
+
+                return (
+                    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-pink-50 to-purple-50">
+                            <h2 className="text-2xl font-bold text-gray-800">Appointments Management</h2>
+                            <p className="text-gray-600 mt-1">Approve or decline patient appointments</p>
+                        </div>
+                        <div className="overflow-x-auto">
+                            {appointments && appointments.length > 0 ? (
+                                <table className="w-full">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Patient</th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Date & Time</th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Reason</th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {appointments.slice(0, 10).map((appointment) => (
+                                            <tr key={appointment.appointment_id} className="hover:bg-gray-50">
+                                                <td className="px-6 py-4">
+                                                    <div className="text-sm font-semibold text-gray-900">
+                                                        {appointment.patient_display_name || 'N/A'}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="text-sm font-medium text-gray-900">
+                                                        {appointment.appointment_date}
+                                                    </div>
+                                                    <div className="text-sm text-gray-500">
+                                                        {appointment.appointment_time}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="text-sm text-gray-700">
+                                                        {appointment.reason_for_visit || 'General consultation'}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(appointment.status)}`}>
+                                                        {(appointment.status || 'pending').toUpperCase()}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex space-x-2">
+                                                        {appointment.status === 'pending' && (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => updateAppointmentStatus(appointment.appointment_id, 'approve')}
+                                                                    className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700"
+                                                                >
+                                                                    Approve
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => updateAppointmentStatus(appointment.appointment_id, 'decline')}
+                                                                    className="px-3 py-1 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700"
+                                                                >
+                                                                    Decline
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                        {appointment.status === 'confirmed' && (
+                                                            <button
+                                                                onClick={() => updateAppointmentStatus(appointment.appointment_id, 'complete')}
+                                                                className="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700"
+                                                            >
+                                                                Complete
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <div className="text-center py-12">
+                                    <div className="text-gray-400 text-6xl mb-4">📅</div>
+                                    <h3 className="text-lg font-medium text-gray-900 mb-2">No appointments yet</h3>
+                                    <p className="text-gray-500">Appointments will appear here as patients book them.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
+            const ProfileTab = () => {
+                const [editMode, setEditMode] = useState(false);
+                const [profileData, setProfileData] = useState(doctorData || {});
+
+                const handleSave = async () => {
+                    try {
+                        const response = await fetch(`${API_BASE}/doctors/profile/update_profile/`, {
+                            method: 'PUT',
+                            headers: getHeaders(),
+                            body: JSON.stringify(profileData)
+                        });
+                        
+                        if (response.ok) {
+                            loadDashboardData();
+                            setEditMode(false);
+                        }
+                    } catch (err) {
+                        setError('Failed to update profile');
+                    }
+                };
+
+                return (
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold text-gray-800">My Profile</h2>
+                            <button
+                                onClick={() => editMode ? handleSave() : setEditMode(true)}
+                                className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700"
+                            >
+                                {editMode ? 'Save Changes' : 'Edit Profile'}
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                                {editMode ? (
+                                    <textarea
+                                        value={profileData.bio || ''}
+                                        onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                        rows="4"
+                                    />
+                                ) : (
+                                    <p className="text-gray-700 bg-gray-50 p-3 rounded-md">{doctorData?.bio || 'No bio available'}</p>
+                                )}
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                                {editMode ? (
+                                    <input
+                                        type="tel"
+                                        value={profileData.phone_number || ''}
+                                        onChange={(e) => setProfileData({...profileData, phone_number: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                    />
+                                ) : (
+                                    <p className="text-gray-700 bg-gray-50 p-3 rounded-md">{doctorData?.phone_number || 'No phone number'}</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {editMode && (
+                            <div className="mt-4 flex space-x-4">
+                                <button
+                                    onClick={() => setEditMode(false)}
+                                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+            const QueriesTab = () => {
+                return (
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-6">Patient Queries</h2>
+                        {queries && queries.length > 0 ? (
+                            queries.map((query) => (
+                                <div key={query.id} className="border-b border-gray-200 pb-4 mb-4 last:border-b-0">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 className="font-semibold text-gray-900">{query.patient_name}</h3>
+                                        <span className={`px-2 py-1 text-xs rounded-full ${
+                                            query.severity_score >= 7 ? 'bg-red-100 text-red-800' :
+                                            query.severity_score >= 4 ? 'bg-yellow-100 text-yellow-800' :
+                                            'bg-green-100 text-green-800'
+                                        }`}>
+                                            Severity {query.severity_score}
+                                        </span>
+                                    </div>
+                                    <p className="text-gray-700 mb-2">{query.query_text}</p>
+                                    <p className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
+                                        AI Response: {query.ai_response}
+                                    </p>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-gray-500 text-center py-8">No patient queries available.</p>
+                        )}
+                    </div>
+                );
+            };
+
+            const DashboardContent = () => {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+                        <header className="bg-white shadow-sm border-b">
+                            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                <div className="flex justify-between items-center py-6">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="h-12 w-12 bg-gradient-to-r from-pink-600 to-purple-600 rounded-xl flex items-center justify-center">
+                                            <span className="text-white text-xl">🩺</span>
+                                        </div>
+                                        <div>
+                                            <h1 className="text-2xl font-bold text-gray-900">Doctor Dashboard</h1>
+                                            {doctorData && (
+                                                <p className="text-gray-600">Welcome back, {doctorData.full_name || 'Doctor'}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center space-x-4">
+                                        {dashboardStats && (
+                                            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                                dashboardStats.is_available 
+                                                    ? 'bg-green-100 text-green-800' 
+                                                    : 'bg-red-100 text-red-800'
+                                            }`}>
+                                                {dashboardStats.is_available ? '🟢 Available' : '🔴 Unavailable'}
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={() => {
+                                                localStorage.removeItem('doctorToken');
+                                                setIsLoggedIn(false);
+                                                setDoctorData(null);
+                                                setDashboardStats(null);
+                                            }}
+                                            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium"
+                                        >
+                                            Logout
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </header>
+
+                        <nav className="bg-white border-b">
+                            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                <div className="flex space-x-8">
+                                    {[
+                                        { key: 'dashboard', label: 'Dashboard', icon: '📊' },
+                                        { key: 'appointments', label: 'Appointments', icon: '📅' },
+                                        { key: 'profile', label: 'My Profile', icon: '👤' },
+                                        { key: 'queries', label: 'Patient Queries', icon: '💬' }
+                                    ].map((tab) => (
+                                        <button
+                                            key={tab.key}
+                                            onClick={() => setActiveTab(tab.key)}
+                                            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                                                activeTab === tab.key
+                                                    ? 'border-pink-500 text-pink-600'
+                                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                            }`}
+                                        >
+                                            <span>{tab.icon}</span>
+                                            <span>{tab.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </nav>
+
+                        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                            {loading && (
+                                <div className="text-center py-12">
+                                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
+                                    <p className="text-gray-600 mt-2">Loading...</p>
+                                </div>
+                            )}
+
+                            {error && (
+                                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
+                                    <div className="flex items-center">
+                                        <span className="mr-2">❌</span>
+                                        {error}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'dashboard' && (
+                                <div>
+                                    <StatsCards />
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                        <div className="bg-white rounded-xl shadow-lg p-6">
+                                            <h3 className="text-lg font-bold mb-4 text-gray-800">Recent Appointments</h3>
+                                            {appointments && appointments.length > 0 ? (
+                                                appointments.slice(0, 5).map((appointment) => (
+                                                    <div key={appointment.appointment_id} className="flex justify-between items-center py-3 border-b border-gray-100 last:border-b-0">
+                                                        <div>
+                                                            <p className="font-medium text-gray-900">{appointment.patient_display_name || 'N/A'}</p>
+                                                            <p className="text-sm text-gray-500">
+                                                                {appointment.appointment_date} at {appointment.appointment_time}
+                                                            </p>
+                                                        </div>
+                                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                                            appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                            appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                                            'bg-blue-100 text-blue-800'
+                                                        }`}>
+                                                            {appointment.status || 'pending'}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="text-gray-500 text-center py-4">No recent appointments</p>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="bg-white rounded-xl shadow-lg p-6">
+                                            <h3 className="text-lg font-bold mb-4 text-gray-800">Quick Actions</h3>
+                                            <div className="space-y-3">
+                                                <button
+                                                    onClick={toggleAvailability}
+                                                    className={`w-full py-3 rounded-lg font-medium ${
+                                                        dashboardStats?.is_available 
+                                                            ? 'bg-red-100 text-red-800 hover:bg-red-200' 
+                                                            : 'bg-green-100 text-green-800 hover:bg-green-200'
+                                                    }`}
+                                                >
+                                                    {dashboardStats?.is_available ? '🔴 Mark Unavailable' : '🟢 Mark Available'}
+                                                </button>
+                                                <button
+                                                    onClick={() => setActiveTab('profile')}
+                                                    className="w-full py-3 bg-blue-100 text-blue-800 rounded-lg font-medium hover:bg-blue-200"
+                                                >
+                                                    👤 Update Profile
+                                                </button>
+                                                <button
+                                                    onClick={() => setActiveTab('appointments')}
+                                                    className="w-full py-3 bg-purple-100 text-purple-800 rounded-lg font-medium hover:bg-purple-200"
+                                                >
+                                                    📅 Manage Appointments
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'appointments' && <AppointmentsTab />}
+                            {activeTab === 'profile' && <ProfileTab />}
+                            {activeTab === 'queries' && <QueriesTab />}
+                        </main>
+                    </div>
+                );
+            };
+
+            if (!isLoggedIn) {
+                return <LoginForm />;
+            }
+
+            return <DashboardContent />;
+        };
+
+        ReactDOM.render(<DoctorDashboard />, document.getElementById('root'));
+    </script>
+</body>
+</html>

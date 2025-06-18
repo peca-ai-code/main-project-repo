@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WomanCare - Gynecologist Appointments</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Enhanced Custom Styles -->
+    <style>
+        /* Updated Button Styles with consistent sizing */
+        .btn-available {
+            @apply bg-green-500 text-white hover:bg-green-600 transition-colors duration-300;
+        }
+        
+        .btn-booked {
+            @apply bg-red-500 text-white cursor-not-allowed opacity-75;
+        }
+        
+        .btn-closed {
+            @apply bg-gray-400 text-white cursor-not-allowed opacity-50;
+        }
+        
+        /* Book Appointment button - RED with white text */
+        .btn-book-appointment {
+            @apply bg-red-600 text-white hover:bg-red-700 transition-colors duration-300 font-bold;
+        }
+        
+        .btn-primary {
+            @apply bg-pink-600 text-white hover:bg-pink-700 transition-colors duration-300;
+        }
+        
+        .btn-secondary {
+            @apply bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300;
+        }
+        
+        /* Consistent button sizing */
+        .date-button {
+            @apply p-4 rounded-xl text-sm font-bold min-h-[80px] flex flex-col justify-center items-center;
+        }
+        
+        .time-button {
+            @apply p-3 rounded-lg text-sm font-bold min-h-[60px] flex flex-col justify-center items-center;
+        }
+        
+        /* Enhanced Input Styles without glow */
+        .form-input {
+            @apply px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-500 transition-colors duration-300 outline-none;
+        }
+        
+        /* Enhanced Loading Spinner */
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #ec4899;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Enhanced Card Hover Effects without glow */
+        .doctor-card {
+            @apply transition-transform duration-300;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .doctor-card:hover {
+            box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+        
+        // API Configuration
+        const API_BASE = 'http://localhost:9000/api/appointments';
+        
+        // URL Parameter Helper
+        const getUrlParams = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                fromChat: urlParams.get('from_chat') === 'true',
+                specialty: urlParams.get('specialty'),
+                concern: urlParams.get('concern'),
+                severity: urlParams.get('severity')
+            };
+        };
+        
+        // Mock data since we don't have real API
+        const mockDoctors = [
+            {
+                id: 1,
+                name: "Dr. Priya Sharma",
+                rating: 4.8,
+                experience_years: 12,
+                qualification: "MBBS, MD (Obstetrics & Gynecology), AIIMS",
+                specialty: "General Gynecology",
+                consultation_fee: 1800,
+                initials: "PS",
+                clinic_name: "Sharma Women's Clinic"
+            },
+            {
+                id: 2,
+                name: "Dr. Anjali Desai",
+                rating: 4.9,
+                experience_years: 15,
+                qualification: "MBBS, DNB (Obstetrics & Gynecology)",
+                specialty: "Obstetrics & Gynecology",
+                consultation_fee: 2000,
+                initials: "AD",
+                clinic_name: "Desai Maternity Center"
+            },
+            {
+                id: 3,
+                name: "Dr. Sarika Patel",
+                rating: 4.7,
+                experience_years: 10,
+                qualification: "MBBS, MS (Obstetrics & Gynecology), PGIMER",
+                specialty: "Fertility Specialist",
+                consultation_fee: 2200,
+                initials: "SP",
+                clinic_name: "Patel Fertility Clinic"
+            },
+            {
+                id: 4,
+                name: "Dr. Divya Joshi",
+                rating: 4.6,
+                experience_years: 8,
+                qualification: "MBBS, MD (Gynecology)",
+                specialty: "General Gynecology",
+                consultation_fee: 1600,
+                initials: "DJ",
+                clinic_name: "Joshi Women's Care"
+            },
+            {
+                id: 5,
+                name: "Dr. Kavita Singh",
+                rating: 4.9,
+                experience_years: 20,
+                qualification: "MBBS, MD (Obstetrics & Gynecology), AIIMS",
+                specialty: "Gynecologic Oncology",
+                consultation_fee: 2500,
+                initials: "KS",
+                clinic_name: "Singh Cancer Care"
+            }
+        ];
+
+        // Enhanced API Helper Functions
+        const api = {
+            async fetchDoctors(specialty = '', searchQuery = '') {
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                let filtered = mockDoctors;
+                if (specialty && specialty !== 'all') {
+                    filtered = filtered.filter(doc => doc.specialty.toLowerCase().includes(specialty.toLowerCase()));
+                }
+                if (searchQuery) {
+                    filtered = filtered.filter(doc => 
+                        doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        doc.specialty.toLowerCase().includes(searchQuery.toLowerCase())
+                    );
+                }
+                return filtered;
+            },
+
+            async fetchAvailableSlots(doctorId, date) {
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                // Generate available slots (9 AM to 5 PM, 30-minute intervals)
+                const slots = [];
+                for (let h = 9; h <= 17; h++) {
+                    slots.push(`${h}:00`);
+                    if (h < 17) slots.push(`${h}:30`);
+                }
+                
+                // Randomly mark some as available (more realistic distribution)
+                const availableSlots = slots.filter(() => Math.random() > 0.4);
+                return availableSlots;
+            },
+
+            async fetchBookedSlots(doctorId, date) {
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                // Return some booked slots
+                return ['10:00', '11:30', '14:00', '16:30'];
+            },
+
+            async bookAppointment(appointmentData) {
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Simulate success
+                return {
+                    success: true,
+                    appointment_id: Date.now(),
+                    message: 'Appointment booked successfully'
+                };
+            },
+
+            async fetchSpecialties() {
+                return ['General Gynecology', 'Obstetrics & Gynecology', 'Fertility Specialist', 'Gynecologic Oncology'];
+            },
+
+            getCsrfToken() {
+                return 'mock-csrf-token';
+            }
+        };
+
+        // Main App Component
+        const App = () => {
+            // Get URL parameters
+            const urlParams = getUrlParams();
+            
+            // States
+            const [doctors, setDoctors] = useState([]);
+            const [specialties, setSpecialties] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [searchQuery, setSearchQuery] = useState('');
+            const [filteredDoctors, setFilteredDoctors] = useState([]);
+            const [selectedDoctor, setSelectedDoctor] = useState(null);
+            const [selectedDate, setSelectedDate] = useState(null);
+            const [selectedTime, setSelectedTime] = useState(null);
+            const [availableSlots, setAvailableSlots] = useState([]);
+            const [bookedSlots, setBookedSlots] = useState([]);
+            const [showConfirmation, setShowConfirmation] = useState(false);
+            const [isBooked, setIsBooked] = useState(false);
+            const [showFilters, setShowFilters] = useState(false);
+            const [sortOption, setSortOption] = useState('default');
+            const [error, setError] = useState('');
+            
+            const [bookingData, setBookingData] = useState({
+                name: '',
+                email: '',
+                phone: '',
+                age: '',
+                reason: urlParams.concern || ''
+            });
+            
+            const [filters, setFilters] = useState({
+                specialty: urlParams.specialty || 'all',
+                minRating: 0,
+                minExperience: 0,
+                maxPrice: 3000
+            });
+            
+            // Proper input handlers with useCallback to prevent re-rendering issues
+            const handleBookingDataChange = useCallback((field, value) => {
+                setBookingData(prev => ({
+                    ...prev,
+                    [field]: value
+                }));
+            }, []);
+            
+            // Load initial data
+            useEffect(() => {
+                loadInitialData();
+            }, []);
+
+            const loadInitialData = async () => {
+                setLoading(true);
+                setError('');
+                try {
+                    const [doctorsData, specialtiesData] = await Promise.all([
+                        api.fetchDoctors(urlParams.specialty),
+                        api.fetchSpecialties()
+                    ]);
+                    
+                    setDoctors(doctorsData);
+                    setFilteredDoctors(doctorsData);
+                    setSpecialties(['all', ...specialtiesData]);
+                    
+                    if (doctorsData.length === 0) {
+                        setError('No doctors available at the moment. Please try again later.');
+                    }
+                } catch (error) {
+                    setError('Failed to load doctors. Please check your internet connection and try again.');
+                    console.error('Error loading initial data:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            // Get exactly 14 days from tomorrow
+            const getNext14Days = () => {
+                const dates = [];
+                const today = new Date();
+                
+                for (let i = 1; i <= 14; i++) {
+                    const date = new Date(today);
+                    date.setDate(today.getDate() + i);
+                    dates.push({
+                        dateStr: date.toISOString().split('T')[0],
+                        displayDate: date.toLocaleDateString('en-US', { 
+                            weekday: 'short', 
+                            month: 'short', 
+                            day: 'numeric' 
+                        }),
+                        dayName: date.toLocaleDateString('en-US', { weekday: 'long' })
+                    });
+                }
+                
+                return dates;
+            };
+
+            // Load slots with availability
+            const loadSlotsWithAvailability = async (doctorId, date) => {
+                setLoading(true);
+                try {
+                    const [availableSlots, bookedSlots] = await Promise.all([
+                        api.fetchAvailableSlots(doctorId, date),
+                        api.fetchBookedSlots(doctorId, date)
+                    ]);
+                    
+                    setAvailableSlots(availableSlots);
+                    setBookedSlots(bookedSlots);
+                } catch (error) {
+                    setError('Failed to load time slots');
+                    setAvailableSlots([]);
+                    setBookedSlots([]);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            // Filter and sort doctors
+            useEffect(() => {
+                let filtered = doctors.filter(doctor => {
+                    if (searchQuery && !doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+                        !doctor.specialty.toLowerCase().includes(searchQuery.toLowerCase())) {
+                        return false;
+                    }
+                    
+                    if (filters.specialty !== 'all' && doctor.specialty !== filters.specialty) {
+                        return false;
+                    }
+                    
+                    if (doctor.rating < filters.minRating) return false;
+                    if (doctor.experience_years < filters.minExperience) return false;
+                    if (doctor.consultation_fee > filters.maxPrice) return false;
+                    
+                    return true;
+                });
+                
+                // Apply sorting
+                if (sortOption === 'rating') {
+                    filtered = [...filtered].sort((a, b) => b.rating - a.rating);
+                } else if (sortOption === 'experience') {
+                    filtered = [...filtered].sort((a, b) => b.experience_years - a.experience_years);
+                } else if (sortOption === 'price_low') {
+                    filtered = [...filtered].sort((a, b) => a.consultation_fee - b.consultation_fee);
+                } else if (sortOption === 'price_high') {
+                    filtered = [...filtered].sort((a, b) => b.consultation_fee - a.consultation_fee);
+                }
+                
+                setFilteredDoctors(filtered);
+            }, [doctors, searchQuery, filters, sortOption]);
+
+            // FIXED: Consistent date status logic
+            const getDateStatus = (dateStr) => {
+                const dayOfWeek = new Date(dateStr).getDay();
+                const dateHash = parseInt(dateStr.replace(/-/g, '')) % 10;
+                
+                // Sunday is always closed
+                if (dayOfWeek === 0) return 'closed';
+                
+                // Use consistent logic based on date hash
+                if (dateHash <= 2) return 'fully_booked';  // 30% fully booked
+                if (dateHash <= 6) return 'available';     // 40% available  
+                return 'available';                        // 30% available
+            };
+
+            // FIXED: Get correct status text
+            const getDateStatusText = (dateStr) => {
+                const status = getDateStatus(dateStr);
+                switch (status) {
+                    case 'available': return 'Available';
+                    case 'fully_booked': return 'Full';
+                    case 'closed': return 'Closed';
+                    default: return 'Available';
+                }
+            };
+
+            // Event Handlers
+            const handleDoctorSelect = async (doctor) => {
+                setSelectedDoctor(doctor);
+                setSelectedDate(null);
+                setSelectedTime(null);
+                setAvailableSlots([]);
+                setBookedSlots([]);
+                setShowConfirmation(false);
+                setIsBooked(false);
+                setError('');
+            };
+            
+            const handleDateSelect = async (dateInfo) => {
+                const status = getDateStatus(dateInfo.dateStr);
+                
+                if (status === 'closed' || status === 'fully_booked') {
+                    setError(`This date is ${status === 'closed' ? 'not available' : 'fully booked'}. Please choose another date.`);
+                    return;
+                }
+                
+                setSelectedDate(dateInfo.dateStr);
+                setSelectedTime(null);
+                setShowConfirmation(false);
+                setError('');
+                if (selectedDoctor) {
+                    await loadSlotsWithAvailability(selectedDoctor.id, dateInfo.dateStr);
+                }
+            };
+            
+            const handleTimeSelect = async (timeSlot) => {
+                if (bookedSlots.includes(timeSlot)) {
+                    setError('This time slot is already booked. Please select another time.');
+                    return;
+                }
+                
+                setSelectedTime(timeSlot);
+                setShowConfirmation(true);
+                setError('');
+            };
+
+            const handleBookingSubmit = async () => {
+                setLoading(true);
+                setError('');
+                
+                try {
+                    const appointmentData = {
+                        doctor_id: selectedDoctor.id,
+                        appointment_date: selectedDate,
+                        appointment_time: selectedTime,
+                        patient_name: bookingData.name,
+                        patient_email: bookingData.email,
+                        patient_phone: bookingData.phone,
+                        patient_age: bookingData.age ? parseInt(bookingData.age) : null,
+                        reason_for_visit: bookingData.reason,
+                        appointment_type: 'consultation'
+                    };
+                    
+                    await api.bookAppointment(appointmentData);
+                    setIsBooked(true);
+                    setShowConfirmation(false);
+                    
+                } catch (error) {
+                    setError(error.message || 'Failed to book appointment. Please try again.');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const resetAll = () => {
+                setSelectedDoctor(null);
+                setSelectedDate(null);
+                setSelectedTime(null);
+                setAvailableSlots([]);
+                setBookedSlots([]);
+                setShowConfirmation(false);
+                setIsBooked(false);
+                setError('');
+                setBookingData({
+                    name: '',
+                    email: '',
+                    phone: '',
+                    age: '',
+                    reason: urlParams.concern || ''
+                });
+            };
+
+            const resetFilters = () => {
+                setFilters({
+                    specialty: 'all',
+                    minRating: 0,
+                    minExperience: 0,
+                    maxPrice: 3000
+                });
+                setSearchQuery('');
+                setSortOption('default');
+            };
+
+            // FIXED: Get correct styling classes for DATE buttons that match status
+            const getDateButtonClass = (dateStr) => {
+                const status = getDateStatus(dateStr);
+                
+                switch (status) {
+                    case 'available':
+                        return 'date-button bg-green-500 text-white hover:bg-green-600 transition-colors duration-300';
+                    case 'fully_booked':
+                        return 'date-button bg-red-500 text-white cursor-not-allowed opacity-75';
+                    case 'closed':
+                        return 'date-button bg-gray-400 text-white cursor-not-allowed opacity-50';
+                    default:
+                        return 'date-button bg-green-500 text-white hover:bg-green-600 transition-colors duration-300';
+                }
+            };
+
+            // FIXED: Get correct styling classes for TIME SLOT buttons that match availability
+            const getSlotButtonClass = (timeSlot) => {
+                if (bookedSlots.includes(timeSlot)) {
+                    return 'time-button bg-red-500 text-white cursor-not-allowed opacity-75';
+                } else if (availableSlots.includes(timeSlot)) {
+                    return 'time-button bg-green-500 text-white hover:bg-green-600 transition-colors duration-300';
+                } else {
+                    return 'time-button bg-gray-400 text-white cursor-not-allowed opacity-50';
+                }
+            };
+
+            // FIXED: Get correct status text for time slots
+            const getSlotStatusText = (timeSlot) => {
+                if (bookedSlots.includes(timeSlot)) {
+                    return 'Booked';
+                } else if (availableSlots.includes(timeSlot)) {
+                    return '';
+                } else {
+                    return 'Closed';
+                }
+            };
+
+            // Get avatar color for doctors
+            const getAvatarColor = (id) => {
+                const colors = [
+                    'bg-pink-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-500', 
+                    'bg-yellow-500', 'bg-red-500', 'bg-indigo-500', 'bg-teal-500'
+                ];
+                return colors[id % colors.length];
+            };
+
+            // Components
+            const LoadingSpinner = () => (
+                <div className="flex justify-center items-center py-12">
+                    <div className="loading-spinner"></div>
+                    <span className="ml-3 text-gray-600 font-medium">Loading...</span>
+                </div>
+            );
+
+            const ErrorMessage = ({ message, onRetry }) => (
+                <div className="bg-red-50 border-2 border-red-200 text-red-800 px-6 py-4 rounded-xl mb-6">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                            <span className="mr-3 text-xl">⚠️</span>
+                            <span className="font-medium">{message}</span>
+                        </div>
+                        {onRetry && (
+                            <button
+                                onClick={onRetry}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                            >
+                                Retry
+                            </button>
+                        )}
+                    </div>
+                </div>
+            );
+
+            const ChatContextBanner = () => {
+                if (!urlParams.fromChat) return null;
+                
+                return (
+                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-6 mb-8">
+                        <div className="flex items-center mb-3">
+                            <span className="text-blue-600 mr-3 text-xl">💬</span>
+                            <h3 className="text-lg font-bold text-blue-800">From Chat Assistant</h3>
+                        </div>
+                        <p className="text-blue-700 mb-3">
+                            Based on our conversation, I've filtered doctors by <strong>{urlParams.specialty}</strong> specialty.
+                        </p>
+                        {urlParams.concern && (
+                            <p className="text-blue-600 text-sm mb-3">
+                                <strong>Your concern:</strong> "{urlParams.concern}"
+                            </p>
+                        )}
+                        {urlParams.severity && (
+                            <div className="flex items-center">
+                                <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${
+                                    parseInt(urlParams.severity) >= 7 ? 'bg-red-100 text-red-800' :
+                                    parseInt(urlParams.severity) >= 5 ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-green-100 text-green-800'
+                                }`}>
+                                    Priority Level: {urlParams.severity}/10
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+            const DoctorCard = ({ doctor }) => (
+                <div className="doctor-card bg-white rounded-2xl overflow-hidden shadow-lg p-6">
+                    <div className={`w-full h-48 rounded-xl mb-4 flex items-center justify-center ${getAvatarColor(doctor.id)}`}>
+                        <span className="text-white text-4xl font-bold">{doctor.initials}</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">{doctor.name}</h3>
+                    <p className="text-blue-600 font-medium mb-1">{doctor.specialty}</p>
+                    <p className="text-gray-600 text-sm mb-3">{doctor.qualification}</p>
+                    <div className="flex items-center mb-3">
+                        <span className="text-yellow-500 mr-2 text-lg">★</span>
+                        <span className="text-gray-700 font-medium">{doctor.rating} • {doctor.experience_years} years exp.</span>
+                    </div>
+                    <p className="text-green-600 font-bold text-lg mb-4">₹{doctor.consultation_fee}</p>
+                    <p className="text-gray-600 text-sm mb-4">{doctor.clinic_name}</p>
+                    
+                    {urlParams.fromChat && doctor.specialty === urlParams.specialty && (
+                        <div className="mb-4 px-3 py-2 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 rounded-lg text-sm font-medium text-center">
+                            💡 Recommended for your concern
+                        </div>
+                    )}
+                    
+                    {/* FIXED: RED Book Appointment button with white text */}
+                    <button 
+                        onClick={() => handleDoctorSelect(doctor)}
+                        className="w-full py-3 btn-book-appointment rounded-lg"
+                    >
+                        Book Appointment
+                    </button>
+                </div>
+            );
+
+            // Patient Info Form with proper input handling
+            const PatientInfoForm = () => (
+                <div className="bg-gray-50 p-6 rounded-xl mb-6">
+                    <h4 className="font-bold text-gray-800 mb-4 text-lg">Patient Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input
+                            type="text"
+                            placeholder="Full Name *"
+                            value={bookingData.name}
+                            onChange={(e) => handleBookingDataChange('name', e.target.value)}
+                            className="form-input"
+                            required
+                        />
+                        <input
+                            type="email"
+                            placeholder="Email Address *"
+                            value={bookingData.email}
+                            onChange={(e) => handleBookingDataChange('email', e.target.value)}
+                            className="form-input"
+                            required
+                        />
+                        <input
+                            type="tel"
+                            placeholder="Phone Number *"
+                            value={bookingData.phone}
+                            onChange={(e) => handleBookingDataChange('phone', e.target.value)}
+                            className="form-input"
+                            required
+                        />
+                        <input
+                            type="number"
+                            placeholder="Age"
+                            value={bookingData.age}
+                            onChange={(e) => handleBookingDataChange('age', e.target.value)}
+                            className="form-input"
+                        />
+                    </div>
+                    <textarea
+                        placeholder="Reason for visit (optional)"
+                        value={bookingData.reason}
+                        onChange={(e) => handleBookingDataChange('reason', e.target.value)}
+                        className="form-input w-full mt-4"
+                        rows="3"
+                    />
+                    {urlParams.fromChat && (
+                        <p className="text-sm text-blue-600 mt-3 font-medium">
+                            💡 Your concern from the chat has been pre-filled above
+                        </p>
+                    )}
+                </div>
+            );
+
+            // Render different screens based on state
+            if (loading && doctors.length === 0) {
+                return (
+                    <div className="max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen">
+                        <header className="text-center mb-12">
+                            <h1 className="text-5xl font-bold text-pink-600 mb-2">WomanCare</h1>
+                            <p className="text-lg text-gray-600">Connect with top gynecologists across India</p>
+                        </header>
+                        <LoadingSpinner />
+                    </div>
+                );
+            }
+
+            if (isBooked) {
+                return (
+                    <div className="max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+                        <div className="bg-white border-2 border-green-200 rounded-2xl p-8 text-center shadow-2xl max-w-md mx-auto">
+                            <div className="mb-6 flex justify-center">
+                                <div className="h-20 w-20 bg-green-100 rounded-full flex items-center justify-center">
+                                    <span className="text-green-600 text-3xl">✓</span>
+                                </div>
+                            </div>
+                            <h2 className="text-3xl font-bold text-green-600 mb-4">Appointment Scheduled!</h2>
+                            <p className="text-lg mb-6 text-gray-700">
+                                Your appointment with <strong>{selectedDoctor.name}</strong> is confirmed for <strong>{selectedDate}</strong> at <strong>{selectedTime}</strong>.
+                            </p>
+                            {urlParams.fromChat && (
+                                <p className="text-blue-600 mb-4 font-medium">
+                                    🎯 Perfect match for your chat concern!
+                                </p>
+                            )}
+                            <p className="text-gray-600 mb-8">
+                                A confirmation email will be sent to you shortly.
+                            </p>
+                            <div className="flex space-x-4">
+                                <button 
+                                    onClick={resetAll} 
+                                    className="flex-1 btn-primary py-3 rounded-lg font-bold"
+                                >
+                                    Book Another
+                                </button>
+                                <button 
+                                    onClick={() => window.open('http://localhost:8001', '_blank')} 
+                                    className="flex-1 btn-secondary py-3 rounded-lg font-bold"
+                                >
+                                    Back to Chat
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (selectedDoctor && selectedDate && selectedTime && showConfirmation) {
+                return (
+                    <div className="max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen">
+                        <header className="text-center mb-8">
+                            <h1 className="text-4xl font-bold text-pink-600 mb-2">WomanCare</h1>
+                            <p className="text-lg text-gray-600">Confirm Your Appointment</p>
+                        </header>
+
+                        {error && <ErrorMessage message={error} onRetry={() => setError('')} />}
+
+                        <div className="bg-white rounded-2xl p-8 max-w-lg mx-auto shadow-2xl">
+                            <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Appointment Summary</h2>
+                            
+                            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl mb-6">
+                                <h3 className="font-bold text-lg text-gray-800">{selectedDoctor.name}</h3>
+                                <p className="text-gray-600 text-sm">{selectedDoctor.qualification}</p>
+                                <p className="text-blue-600 font-medium">{selectedDoctor.specialty}</p>
+                                <p className="text-gray-600 text-sm">{selectedDoctor.clinic_name}</p>
+                            </div>
+                            
+                            <div className="space-y-4 mb-6 bg-gray-50 p-6 rounded-xl">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600 font-medium">Date:</span>
+                                    <span className="font-bold text-gray-800">{selectedDate}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600 font-medium">Time:</span>
+                                    <span className="font-bold text-gray-800">{selectedTime}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600 font-medium">Consultation Fee:</span>
+                                    <span className="font-bold text-green-600 text-lg">₹{selectedDoctor.consultation_fee}</span>
+                                </div>
+                            </div>
+
+                            <PatientInfoForm />
+                            
+                            <div className="flex space-x-4">
+                                <button 
+                                    onClick={() => setShowConfirmation(false)}
+                                    className="flex-1 py-3 border-2 border-gray-300 rounded-lg font-bold hover:bg-gray-50 transition-colors"
+                                    disabled={loading}
+                                >
+                                    Back
+                                </button>
+                                <button 
+                                    onClick={handleBookingSubmit}
+                                    className="flex-1 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={loading || !bookingData.name || !bookingData.email || !bookingData.phone}
+                                >
+                                    {loading ? 'Booking...' : 'Confirm Appointment'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (selectedDoctor && selectedDate) {
+                // Generate all possible time slots for the day
+                const generateAllTimeSlots = () => {
+                    const slots = [];
+                    for (let h = 9; h <= 17; h++) {
+                        slots.push(`${h}:00`);
+                        if (h < 17) slots.push(`${h}:30`);
+                    }
+                    return slots;
+                };
+
+                const allTimeSlots = generateAllTimeSlots();
+
+                return (
+                    <div className="max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen">
+                        <header className="text-center mb-8">
+                            <h1 className="text-4xl font-bold text-pink-600 mb-2">WomanCare</h1>
+                            <p className="text-lg text-gray-600">Select Time</p>
+                        </header>
+
+                        {error && <ErrorMessage message={error} onRetry={() => loadSlotsWithAvailability(selectedDoctor.id, selectedDate)} />}
+
+                        <div className="bg-white rounded-2xl p-8 max-w-lg mx-auto shadow-2xl">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-2xl font-bold text-gray-800">Select Time</h2>
+                                <button 
+                                    onClick={() => setSelectedDate(null)}
+                                    className="text-pink-600 hover:text-pink-800 font-bold text-lg"
+                                >
+                                    ← Back
+                                </button>
+                            </div>
+                            
+                            <div className="mb-6 bg-blue-50 p-4 rounded-xl">
+                                <p className="font-bold text-blue-800">Date: {selectedDate}</p>
+                                <p className="text-blue-600">{selectedDoctor.name}</p>
+                            </div>
+
+                            {/* Simplified Color Guide */}
+                            <div className="mb-6 p-4 bg-gray-50 rounded-xl">
+                                <p className="font-bold text-gray-800 mb-3">Color Guide:</p>
+                                <div className="grid grid-cols-1 gap-3 text-sm">
+                                    <div className="flex items-center">
+                                        <div className="w-6 h-6 bg-green-500 rounded mr-3"></div>
+                                        <span className="text-gray-800 font-medium">Available</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <div className="w-6 h-6 bg-red-500 rounded mr-3"></div>
+                                        <span className="text-gray-800 font-medium">Booked</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <div className="w-6 h-6 bg-gray-400 rounded mr-3"></div>
+                                        <span className="text-gray-800 font-medium">Closed</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {loading ? (
+                                <LoadingSpinner />
+                            ) : (
+                                <div className="mb-4">
+                                    <h4 className="font-bold text-gray-800 mb-4 text-lg">Time slots:</h4>
+                                    {allTimeSlots.length > 0 ? (
+                                        <div className="grid grid-cols-3 gap-3">
+                                            {allTimeSlots.map(timeSlot => {
+                                                const isBooked = bookedSlots.includes(timeSlot);
+                                                const isAvailable = availableSlots.includes(timeSlot);
+                                                const statusText = getSlotStatusText(timeSlot);
+                                                
+                                                return (
+                                                    <button
+                                                        key={timeSlot}
+                                                        onClick={() => handleTimeSelect(timeSlot)}
+                                                        className={getSlotButtonClass(timeSlot)}
+                                                        disabled={isBooked || !isAvailable}
+                                                    >
+                                                        <div className="font-bold">{timeSlot}</div>
+                                                        {statusText && (
+                                                            <div className="text-xs mt-1 opacity-90">
+                                                                {statusText}
+                                                            </div>
+                                                        )}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-12">
+                                            <div className="text-gray-400 text-6xl mb-4">⏰</div>
+                                            <h3 className="text-lg font-bold text-gray-700 mb-2">No available slots</h3>
+                                            <p className="text-gray-500 mb-6">All slots are booked for this date</p>
+                                            <button
+                                                onClick={() => setSelectedDate(null)}
+                                                className="btn-primary px-6 py-3 rounded-lg font-bold"
+                                            >
+                                                Choose Another Date
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+
+            if (selectedDoctor) {
+                const next14Days = getNext14Days();
+                
+                return (
+                    <div className="max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen">
+                        <header className="text-center mb-8">
+                            <h1 className="text-4xl font-bold text-pink-600 mb-2">WomanCare</h1>
+                            <p className="text-lg text-gray-600">Select Date</p>
+                        </header>
+
+                        <div className="bg-white rounded-2xl p-8 max-w-2xl mx-auto shadow-2xl">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-2xl font-bold text-gray-800">Select Date</h2>
+                                <button 
+                                    onClick={() => setSelectedDoctor(null)}
+                                    className="text-pink-600 hover:text-pink-800 font-bold text-lg"
+                                >
+                                    ← Back
+                                </button>
+                            </div>
+                            
+                            <div className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl">
+                                <h3 className="font-bold text-lg text-gray-800">{selectedDoctor.name}</h3>
+                                <p className="text-blue-600 font-medium">{selectedDoctor.specialty}</p>
+                                <p className="text-green-600 font-bold text-lg mt-2">₹{selectedDoctor.consultation_fee}</p>
+                            </div>
+                            
+                            {loading ? (
+                                <LoadingSpinner />
+                            ) : (
+                                <div>
+                                    <h4 className="font-bold text-gray-800 mb-4 text-lg">Next 14 Days:</h4>
+                                    
+                                    {/* Simplified Color Guide */}
+                                    <div className="mb-6 p-4 bg-gray-50 rounded-xl">
+                                        <p className="font-bold text-gray-800 mb-3">Color Guide:</p>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                                            <div className="flex items-center">
+                                                <div className="w-6 h-6 bg-green-500 rounded mr-3"></div>
+                                                <span className="text-gray-800 font-medium">Available</span>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <div className="w-6 h-6 bg-red-500 rounded mr-3"></div>
+                                                <span className="text-gray-800 font-medium">Fully Booked</span>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <div className="w-6 h-6 bg-gray-400 rounded mr-3"></div>
+                                                <span className="text-gray-800 font-medium">Closed</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                        {next14Days.map(dateInfo => {
+                                            const status = getDateStatus(dateInfo.dateStr);
+                                            const statusText = getDateStatusText(dateInfo.dateStr);
+                                            
+                                            return (
+                                                <button
+                                                    key={dateInfo.dateStr}
+                                                    onClick={() => handleDateSelect(dateInfo)}
+                                                    className={getDateButtonClass(dateInfo.dateStr)}
+                                                    disabled={status === 'closed' || status === 'fully_booked'}
+                                                >
+                                                    <div className="font-bold">{dateInfo.displayDate}</div>
+                                                    <div className="text-xs mt-1 opacity-90">
+                                                        {statusText}
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen">
+                    <header className="text-center mb-12">
+                        <h1 className="text-5xl font-bold text-pink-600 mb-2">WomanCare</h1>
+                        <p className="text-xl text-gray-600">Connect with top gynecologists across India</p>
+                    </header>
+
+                    <ChatContextBanner />
+                    {error && <ErrorMessage message={error} onRetry={loadInitialData} />}
+
+                    <div className="mb-8">
+                        <div className="flex flex-col md:flex-row gap-4 mb-6">
+                            <div className="flex-1 relative">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <span className="text-gray-400 text-lg">🔍</span>
+                                </div>
+                                <input
+                                    type="text"
+                                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-300 rounded-xl focus:border-pink-500 outline-none text-lg transition-colors duration-300"
+                                    placeholder="Search doctors by name or specialty..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                            <button
+                                onClick={() => setShowFilters(!showFilters)}
+                                className="btn-secondary px-6 py-4 rounded-xl font-bold"
+                            >
+                                <span className="mr-2">🔍</span>
+                                <span>{showFilters ? 'Hide Filters' : 'Show Filters'}</span>
+                            </button>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-3xl font-bold text-gray-800">
+                                {urlParams.fromChat && urlParams.specialty !== 'all' 
+                                    ? `${urlParams.specialty} Specialists (${filteredDoctors.length})`
+                                    : `Our Gynecologists (${filteredDoctors.length})`
+                                }
+                            </h2>
+                            <div className="flex bg-white rounded-xl overflow-hidden shadow-lg border-2">
+                                {['default', 'rating', 'experience', 'price_low', 'price_high'].map((option) => (
+                                    <button 
+                                        key={option}
+                                        onClick={() => setSortOption(option)} 
+                                        className={`px-4 py-2 text-sm font-bold transition-colors duration-300 ${
+                                            sortOption === option 
+                                                ? 'text-pink-600 bg-pink-50 border-b-2 border-pink-600' 
+                                                : 'text-gray-600 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        {option === 'default' ? 'ALL' :
+                                         option === 'rating' ? 'Top Rated' :
+                                         option === 'experience' ? 'Experience' :
+                                         option === 'price_low' ? 'Price ↓' : 'Price ↑'}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {loading ? (
+                        <LoadingSpinner />
+                    ) : filteredDoctors.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {filteredDoctors.map(doctor => (
+                                <DoctorCard key={doctor.id} doctor={doctor} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center p-16 bg-white rounded-2xl shadow-lg">
+                            <div className="text-gray-400 text-8xl mb-6">👩‍⚕️</div>
+                            <h3 className="text-2xl font-bold text-gray-700 mb-4">No doctors found</h3>
+                            <p className="text-gray-500 mb-8 text-lg">
+                                {urlParams.fromChat 
+                                    ? `No ${urlParams.specialty} specialists available. Try browsing all doctors.`
+                                    : 'Try adjusting your search criteria'
+                                }
+                            </p>
+                            <button 
+                                onClick={resetFilters} 
+                                className="btn-secondary px-8 py-4 rounded-xl font-bold text-lg"
+                            >
+                                {urlParams.fromChat ? 'Show All Doctors' : 'Clear Filters'}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
