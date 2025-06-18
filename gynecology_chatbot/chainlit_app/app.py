@@ -64,7 +64,9 @@ async def on_chat_start():
             cl.user_session.set("conversation_id", conversation.get("id"))
             
             await cl.Message(
-                content="Welcome to the Gynecology Assistant powered by Firestore! I'm here to provide information and support regarding gynecological health concerns. How can I help you today?"
+                content="""Welcome to the Gynecology Assistant ! 
+                I'm here to provide information and support regarding gynecological health concerns. 
+                How can I help you today?"""
             ).send()
         else:
             cl.user_session.set("conversation_id", str(uuid.uuid4()))
