@@ -45,3 +45,8 @@ if settings.DEBUG:
     urlpatterns += [
         path('api/debug/', debug_info, name='debug_info'),
     ]
+# Add doctor dashboard direct access
+if 'doctors-dashboard' not in [pattern.name for pattern in urlpatterns if hasattr(pattern, 'name')]:
+    urlpatterns += [
+        path('doctors-dashboard/', include('doctors.urls')),
+    ]
